@@ -10,8 +10,9 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
                 <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <div class="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm overflow-hidden" id="userPhotoContainer">
+                        <svg id="userPhotoPlaceholder" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <img id="userPhoto" src="" class="w-full h-full object-cover hidden" alt="Profile" />
                     </div>
                     <div class="flex flex-col">
                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Akses Pegawai</span>
@@ -236,7 +237,64 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             }
             
             const userNameEl = document.getElementById('userName');
-            if (userNameEl) userNameEl.textContent = 'Pegawai Kinerja';
+            if (userNameEl) {
+                const fullName = localStorage.getItem('full_name');
+                userNameEl.textContent = fullName ? fullName.trim() : 'Pegawai Kinerja';
+            }
+
+            const photoPath = localStorage.getItem('photo_path');
+            if (photoPath) {
+                const userPhoto = document.getElementById('userPhoto') as HTMLImageElement;
+                const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
+                if (userPhoto && userPhotoPlaceholder) {
+                    userPhoto.src = `https://absensi-kinerja.labuhanbatuselatankab.go.id${photoPath}`;
+                    userPhoto.classList.remove('hidden');
+                    userPhotoPlaceholder.classList.add('hidden');
+                }
+            }
+
+            // Fetch today's attendance
+            try {
+                const attendRes = await fetch('/api/attendance-today', {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                if (attendRes.ok) {
+                    const attendData = await attendRes.json();
+                    if (attendData && attendData.id) {
+                        const baseUrl = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
+                        
+                        // Update Clock In
+                        if (attendData.clock_in) {
+                            const inTimeEl = document.getElementById('clockInTime');
+                            const inPhotoEl = document.getElementById('clockInPhoto') as HTMLImageElement;
+                            const inPhotoPlaceholder = document.getElementById('clockInPhotoPlaceholder');
+                            
+                            if (inTimeEl) inTimeEl.textContent = new Date(attendData.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            if (attendData.in_photo && inPhotoEl && inPhotoPlaceholder) {
+                                inPhotoEl.src = `${baseUrl}${attendData.in_photo}`;
+                                inPhotoEl.classList.remove('hidden');
+                                inPhotoPlaceholder.classList.add('hidden');
+                            }
+                        }
+
+                        // Update Clock Out
+                        if (attendData.clock_out) {
+                            const outTimeEl = document.getElementById('clockOutTime');
+                            const outPhotoEl = document.getElementById('clockOutPhoto') as HTMLImageElement;
+                            const outPhotoPlaceholder = document.getElementById('clockOutPhotoPlaceholder');
+                            
+                            if (outTimeEl) outTimeEl.textContent = new Date(attendData.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            if (attendData.out_photo && outPhotoEl && outPhotoPlaceholder) {
+                                outPhotoEl.src = `${baseUrl}${attendData.out_photo}`;
+                                outPhotoEl.classList.remove('hidden');
+                                outPhotoPlaceholder.classList.add('hidden');
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to fetch today attendance:', e);
+            }
         }
     })();
 </script>
