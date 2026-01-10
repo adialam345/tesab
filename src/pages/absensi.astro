@@ -210,19 +210,19 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             if (ui.faceMatch) {
                 if (detection) {
                     const rawScore = detection.detection.score * 100;
-                    smoothedScore = smoothedScore + (rawScore - smoothedScore) * 0.2;
+                    // Smoother factor: 0.15 for even more stability
+                    smoothedScore = smoothedScore + (rawScore - smoothedScore) * 0.15;
                     const displayScore = Math.round(smoothedScore);
-                    const actualScore = Math.round(rawScore);
 
-                    ui.faceMatch.textContent = `Verifikasi Aktif (${displayScore}%)`;
+                    ui.faceMatch.textContent = `Harap Senyum (${displayScore}%)`;
                     ui.faceMatch.className = 'text-indigo-600 font-extrabold';
                     
                     if (faceStatusDot) {
                         faceStatusDot.className = 'w-1.5 h-1.5 rounded-full dot-success animate-pulse-slow';
                     }
 
-                    // Immediate capture when score > 70%
-                    if (actualScore > 70 && !isAutoCapturing) {
+                    // Auto capture only when visual score reaches 70%
+                    if (displayScore >= 70 && !isAutoCapturing) {
                         isAutoCapturing = true;
                         ui.livenessUI?.classList.remove('hidden');
                         if (ui.livenessInstruction) {
@@ -237,7 +237,10 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                         runCaptureSequence();
                     }
                 } else {
-                    smoothedScore = smoothedScore * 0.8;
+                    // Gradually fade out score when no face is detected
+                    smoothedScore = smoothedScore * 0.7;
+                    if (smoothedScore < 1) smoothedScore = 0;
+                    
                     ui.livenessUI?.classList.add('hidden');
                     ui.faceMatch.textContent = 'Mencari Wajah...';
                     ui.faceMatch.className = 'text-slate-400 font-bold';
