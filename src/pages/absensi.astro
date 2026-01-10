@@ -374,18 +374,25 @@ import Layout from '../layouts/Layout.astro';
 
             const data = await response.json();
 
+            // Display full JSON response
+            const responsePreview = document.createElement('pre');
+            responsePreview.style.cssText = 'background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 8px; font-size: 0.75rem; text-align: left; overflow-x: auto; margin-top: 1rem;';
+            responsePreview.textContent = JSON.stringify(data, null, 2);
+
             if (response.ok) {
-                checkInStatus.textContent = '✅ Absensi Berhasil!';
+                checkInStatus.innerHTML = '<strong>✅ Absensi Berhasil!</strong><br><small>Server Response:</small>';
+                checkInStatus.appendChild(responsePreview);
                 checkInStatus.className = 'mt-4 text-center success-text';
                 checkInBtn.textContent = 'Absensi Selesai';
             } else {
-                checkInStatus.textContent = `❌ Gagal: ${data.detail || 'Terjadi kesalahan'}`;
+                checkInStatus.innerHTML = `<strong>❌ Gagal (${response.status})</strong><br><small>Server Response:</small>`;
+                checkInStatus.appendChild(responsePreview);
                 checkInStatus.className = 'mt-4 text-center error-text';
                 checkInBtn.disabled = false;
                 checkInBtn.textContent = 'Coba Lagi';
             }
         } catch (error) {
-            checkInStatus.textContent = '❌ Terjadi kesalahan koneksi.';
+            checkInStatus.innerHTML = `<strong>❌ Terjadi kesalahan koneksi</strong><br><small>${error}</small>`;
             checkInStatus.className = 'mt-4 text-center error-text';
             checkInBtn.disabled = false;
             checkInBtn.textContent = 'Coba Lagi';
