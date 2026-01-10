@@ -105,7 +105,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             ui.livenessInstruction.innerHTML = `
                 <div class="flex flex-col items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                    <span class="text-[13px] font-black tracking-widest text-white uppercase">Mengambil Foto...</span>
+                    <span class="text-[13px] font-black tracking-widest text-white uppercase">HARAP SENYUM</span>
                 </div>
             `;
         }
@@ -188,14 +188,12 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
     let isAutoCapturing = false;
     let isDetecting = false;
-    let highScoreStartTime = 0;
     const HOLD_DURATION = 500;
     let smoothedScore = 0;
 
     async function updateFaceDetection() {
         if (ui.video.paused || ui.video.ended || state.capturedPhoto !== null || isAutoCapturing || isDetecting) {
             if (state.capturedPhoto !== null) {
-                highScoreStartTime = 0;
                 ui.livenessUI?.classList.add('hidden');
             }
             setTimeout(updateFaceDetection, 100);
@@ -205,71 +203,41 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         isDetecting = true;
         try {
             // @ts-ignore
-            const detection = await faceapi.detectSingleFace(ui.video, new faceapi.TinyFaceDetectorOptions())
-                .withFaceLandmarks()
-                .withFaceExpressions();
+            const detection = await faceapi.detectSingleFace(ui.video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
 
             const faceStatusDot = document.getElementById('faceStatusDot');
 
             if (ui.faceMatch) {
                 if (detection) {
                     const rawScore = detection.detection.score * 100;
-                    // Smoothing logic: 0.2 is the smoothing factor (lower = smoother/slower)
                     smoothedScore = smoothedScore + (rawScore - smoothedScore) * 0.2;
                     const displayScore = Math.round(smoothedScore);
                     const actualScore = Math.round(rawScore);
 
-                    const expressions = detection.expressions;
-                    const isSmiling = expressions.happy > 0.3;
-
-                    ui.faceMatch.textContent = isSmiling ? `Senyum Terdeteksi (${displayScore}%)` : `Verifikasi Aktif (${displayScore}%)`;
-                    ui.faceMatch.className = isSmiling ? 'text-emerald-600 font-extrabold' : 'text-indigo-600 font-extrabold';
+                    ui.faceMatch.textContent = `Verifikasi Aktif (${displayScore}%)`;
+                    ui.faceMatch.className = 'text-indigo-600 font-extrabold';
                     
                     if (faceStatusDot) {
-                        faceStatusDot.className = isSmiling ? 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse-slow' : 'w-1.5 h-1.5 rounded-full dot-success animate-pulse-slow';
+                        faceStatusDot.className = 'w-1.5 h-1.5 rounded-full dot-success animate-pulse-slow';
                     }
 
-                    // Auto capture hold logic with Smile requirement - Use raw score for logic, smoothed for UI
-                    if (actualScore > 70 && isSmiling) {
-                        if (highScoreStartTime === 0) {
-                            highScoreStartTime = Date.now();
-                            ui.livenessUI?.classList.remove('hidden');
-                        }
-
-                        const elapsed = Date.now() - highScoreStartTime;
-                        const remaining = Math.max(0, Math.ceil((HOLD_DURATION - elapsed) / 1000));
-                        const progress = Math.min(100, (elapsed / HOLD_DURATION) * 100);
-
-                        if (ui.livenessInstruction) {
-                            ui.livenessInstruction.textContent = `HARAP SENYUM... ${remaining} DTK`;
-                        }
-                        if (ui.livenessProgress) {
-                            ui.livenessProgress.style.width = `${progress}%`;
-                        }
-
-                        if (elapsed >= HOLD_DURATION && !isAutoCapturing) {
-                            isAutoCapturing = true;
-                            state.isCheckingLiveness = true;
-                            runCaptureSequence();
-                            highScoreStartTime = 0;
-                        }
-                    } else if (actualScore > 70 && !isSmiling) {
-                        // High score but no smile
-                        highScoreStartTime = 0;
+                    // Immediate capture when score > 70%
+                    if (actualScore > 70 && !isAutoCapturing) {
+                        isAutoCapturing = true;
                         ui.livenessUI?.classList.remove('hidden');
                         if (ui.livenessInstruction) {
-                            ui.livenessInstruction.textContent = `SILAKAN SENYUM 😊`;
+                            ui.livenessInstruction.innerHTML = `
+                                <div class="flex flex-col items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                                    <span class="text-[13px] font-black tracking-widest text-white uppercase">HARAP SENYUM</span>
+                                </div>
+                            `;
                         }
-                        if (ui.livenessProgress) {
-                            ui.livenessProgress.style.width = `0%`;
-                        }
-                    } else {
-                        highScoreStartTime = 0;
-                        ui.livenessUI?.classList.add('hidden');
+                        state.isCheckingLiveness = true;
+                        runCaptureSequence();
                     }
                 } else {
-                    smoothedScore = smoothedScore * 0.8; // Fade out score when no face
-                    highScoreStartTime = 0;
+                    smoothedScore = smoothedScore * 0.8;
                     ui.livenessUI?.classList.add('hidden');
                     ui.faceMatch.textContent = 'Mencari Wajah...';
                     ui.faceMatch.className = 'text-slate-400 font-bold';
