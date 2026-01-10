@@ -140,6 +140,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         ui.retakeBtn.classList.add('hidden');
         state.capturedPhoto = null;
         state.faceEmbedding = null;
+        isAutoCapturing = false;
         ui.checkInBtn.disabled = true;
     });
 
@@ -178,10 +179,12 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         }
     });
 
+    let isAutoCapturing = false;
+
     function updateFaceDetection() {
         (async () => {
             // @ts-ignore
-            if (ui.video.paused || ui.video.ended || !state.capturedPhoto === null) return;
+            if (ui.video.paused || ui.video.ended || state.capturedPhoto !== null || isAutoCapturing) return;
             
             const detection = await faceapi.detectSingleFace(ui.video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
             const faceStatusDot = document.getElementById('faceStatusDot');
@@ -193,6 +196,14 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                     ui.faceMatch.className = 'text-indigo-600 font-extrabold';
                     if (faceStatusDot) {
                         faceStatusDot.className = 'w-1.5 h-1.5 rounded-full dot-success animate-pulse-slow';
+                    }
+
+                    // Auto capture if score > 85%
+                    if (score > 85 && !state.capturedPhoto && !isAutoCapturing) {
+                        isAutoCapturing = true;
+                        ui.livenessUI?.classList.remove('hidden');
+                        state.isCheckingLiveness = true;
+                        runCaptureSequence();
                     }
                 } else {
                     ui.faceMatch.textContent = 'Mencari Wajah...';
