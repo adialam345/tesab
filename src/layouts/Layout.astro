@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>AbsenTech - Sistem Absensi Modern</title>
+		<meta name="description" content="Sistem absensi online modern, cepat, dan efisien untuk perusahaan dan institusi." />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--primary: #6366f1;
+		--primary-hover: #4f46e5;
+		--bg-dark: #0f172a;
+		--bg-card: rgba(30, 41, 59, 0.7);
+		--text-main: #f8fafc;
+		--text-muted: #94a3b8;
+		--glass-border: rgba(255, 255, 255, 0.1);
+		--accent: #8b5cf6;
+	}
+
+	* {
+		box-sizing: border-box;
+		padding: 0;
+		margin: 0;
+	}
+
+	html,
+	body {
+		font-family: 'Plus Jakarta Sans', sans-serif;
+		background-color: var(--bg-dark);
+		color: var(--text-main);
+		margin: 0;
+		width: 100%;
+		height: 100%;
+		overflow-x: hidden;
+	}
+
+	h1, h2, h3, h4, h5, h6 {
+		font-weight: 700;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.glass {
+		background: var(--bg-card);
+		backdrop-filter: blur(12px);
+		border: 1px solid var(--glass-border);
+		border-radius: 16px;
+	}
+</style>
