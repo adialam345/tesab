@@ -195,6 +195,7 @@ import Layout from '../layouts/Layout.astro';
     const livenessProgress = document.getElementById('livenessProgress');
     const livenessUI = document.getElementById('livenessUI');
     let isCheckingLiveness = false;
+    let livenessStartTime = 0;
 
     async function startLivenessCheck() {
         if (!video || !livenessUI) return;
@@ -202,81 +203,69 @@ import Layout from '../layouts/Layout.astro';
         livenessStep = 1;
         livenessProgressValue = 0;
         isCheckingLiveness = true;
+        livenessStartTime = Date.now();
         updateLivenessUI();
-        detectLivenessFrame();
+        runLivenessSequence();
     }
 
-    async function detectLivenessFrame() {
-        if (!isCheckingLiveness || !video) return;
+    async function runLivenessSequence() {
+        if (!isCheckingLiveness) return;
 
+        const elapsed = Date.now() - livenessStartTime;
+        const stepDuration = 2000; // 2 seconds per step
+        const currentStep = Math.floor(elapsed / stepDuration) + 1;
+
+        // Update instruction based on step
+        if (currentStep === 1) {
+            livenessInstruction!.textContent = "Tengok Kiri ⬅️";
+            livenessProgressValue = Math.min((elapsed / stepDuration) * 33, 33);
+        } else if (currentStep === 2) {
+            livenessInstruction!.textContent = "Tengok Kanan ➡️";
+            livenessProgressValue = 33 + Math.min(((elapsed - stepDuration) / stepDuration) * 33, 33);
+        } else if (currentStep === 3) {
+            livenessInstruction!.textContent = "Tersenyum 😊";
+            livenessProgressValue = 66 + Math.min(((elapsed - stepDuration * 2) / stepDuration) * 34, 34);
+        } else if (currentStep >= 4) {
+            livenessProgressValue = 100;
+            livenessInstruction!.textContent = "Verifikasi Selesai ✓";
+            updateLivenessUI();
+            isCheckingLiveness = false;
+            setTimeout(() => autoCapture(), 500);
+            return;
+        }
+
+        updateLivenessUI();
+
+        // Try to detect face for progress feedback
         try {
             // @ts-ignore
             const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
                 .withFaceLandmarks()
-                .withFaceExpressions();
+                .withFaceDescriptor();
 
+            const faceMatchEl = document.getElementById('faceMatch');
+            const faceMatchProgress = document.getElementById('faceMatchProgress');
+            
             if (detection) {
-                const landmarks = detection.landmarks;
-                const expressions = detection.expressions;
-                
-                // Calculate rough yaw (head turn) using nose and eye positions
-                const nose = landmarks.getNose()[3]; // Tip of nose
-                const leftEye = landmarks.getLeftEye()[0];
-                const rightEye = landmarks.getRightEye()[3];
-                
-                const midPoint = (leftEye.x + rightEye.x) / 2;
-                const yaw = (nose.x - midPoint) / (rightEye.x - leftEye.x);
-
-                if (livenessStep === 1) { // Turn Left
-                    livenessInstruction!.textContent = "Tengok Kiri ⬅️";
-                    if (yaw < -0.3) livenessProgressValue += 2;
-                } else if (livenessStep === 2) { // Turn Right
-                    livenessInstruction!.textContent = "Tengok Kanan ➡️";
-                    if (yaw > 0.3) livenessProgressValue += 2;
-                } else if (livenessStep === 3) { // Smile
-                    livenessInstruction!.textContent = "Tersenyum 😊";
-                    if (expressions.happy > 0.7) livenessProgressValue += 2;
-                }
-
-                if (livenessProgressValue >= 100 * (livenessStep / 3)) {
-                    livenessStep++;
-                    if (livenessStep > 3) {
-                        livenessProgressValue = 100;
-                        updateLivenessUI();
-                        isCheckingLiveness = false;
-                        livenessInstruction!.textContent = "Verifikasi Selesai";
-                        
-                        // Final capture with high quality for embedding
-                        setTimeout(() => autoCapture(), 500);
-                        return;
-                    }
-                }
-                updateLivenessUI();
-
-                // Real-time embedding feedback
-                const faceMatchEl = document.getElementById('faceMatch');
-                const faceMatchProgress = document.getElementById('faceMatchProgress');
-                if (faceMatchEl && detection.descriptor) {
-                    const confidence = Math.round(detection.detection.score * 100);
+                const confidence = Math.round(detection.detection.score * 100);
+                if (faceMatchEl) {
                     faceMatchEl.textContent = `✅ Cocok (${confidence}%)`;
                     faceMatchEl.className = 'value success';
-                    if (faceMatchProgress) faceMatchProgress.style.width = `${confidence}%`;
                 }
+                if (faceMatchProgress) faceMatchProgress.style.width = `${confidence}%`;
             } else {
-                const faceMatchEl = document.getElementById('faceMatch');
-                const faceMatchProgress = document.getElementById('faceMatchProgress');
                 if (faceMatchEl) {
-                    faceMatchEl.textContent = '❌ Wajah tidak terlihat';
-                    faceMatchEl.className = 'value error text-error';
+                    faceMatchEl.textContent = '⚠️ Posisikan wajah';
+                    faceMatchEl.className = 'value';
                 }
-                if (faceMatchProgress) faceMatchProgress.style.width = `0%`;
+                if (faceMatchProgress) faceMatchProgress.style.width = `50%`;
             }
         } catch (e) {
-            console.error("Liveness detection error", e);
+            console.warn("Face detection skipped", e);
         }
 
         if (isCheckingLiveness) {
-            requestAnimationFrame(detectLivenessFrame);
+            requestAnimationFrame(runLivenessSequence);
         }
     }
 
