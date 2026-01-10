@@ -178,12 +178,48 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         ui.checkInStatus.innerHTML = result.ok ? '<strong>✅ Absensi Berhasil Disimpan</strong>' : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
         ui.checkInStatus.className = `status-message mt-4 ${result.ok ? 'success-text' : 'error-text'}`;
         
+        // Show Raw JSON Response
+        const jsonContainer = document.getElementById('jsonResponseContainer');
+        const jsonPre = document.getElementById('jsonResponse');
+        if (jsonContainer && jsonPre) {
+            jsonPre.textContent = JSON.stringify(result.data || { error: 'No data returned' }, null, 2);
+            jsonContainer.classList.remove('hidden');
+        }
+
         if (!result.ok) {
             ui.checkInBtn.disabled = false;
             ui.checkInBtn.textContent = 'Coba Lagi';
         } else {
             ui.checkInBtn.textContent = 'Selesai';
         }
+    });
+
+    document.getElementById('copyJsonBtn')?.addEventListener('click', () => {
+        const jsonPre = document.getElementById('jsonResponse');
+        if (jsonPre) {
+            navigator.clipboard.writeText(jsonPre.textContent || '');
+            const btn = document.getElementById('copyJsonBtn');
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'COPIED!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            }
+        }
+    });
+
+    ui.retakeBtn?.addEventListener('click', () => {
+        ui.video.classList.remove('hidden');
+        ui.photo.classList.add('hidden');
+        ui.captureBtn?.classList.remove('hidden');
+        ui.galleryBtn?.classList.remove('hidden');
+        ui.retakeBtn.classList.add('hidden');
+        state.capturedPhoto = null;
+        state.faceEmbedding = null;
+        isAutoCapturing = false;
+        ui.checkInBtn.disabled = true;
+        if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
+        const jsonContainer = document.getElementById('jsonResponseContainer');
+        if (jsonContainer) jsonContainer.classList.add('hidden');
     });
 
     let isAutoCapturing = false;
