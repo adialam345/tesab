@@ -220,7 +220,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                     const actualScore = Math.round(rawScore);
 
                     const expressions = detection.expressions;
-                    const isSmiling = expressions.happy > 0.5;
+                    const isSmiling = expressions.happy > 0.3;
 
                     ui.faceMatch.textContent = isSmiling ? `Senyum Terdeteksi (${displayScore}%)` : `Verifikasi Aktif (${displayScore}%)`;
                     ui.faceMatch.className = isSmiling ? 'text-emerald-600 font-extrabold' : 'text-indigo-600 font-extrabold';
@@ -230,7 +230,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                     }
 
                     // Auto capture hold logic with Smile requirement - Use raw score for logic, smoothed for UI
-                    if (actualScore > 85 && isSmiling) {
+                    if (actualScore > 70 && isSmiling) {
                         if (highScoreStartTime === 0) {
                             highScoreStartTime = Date.now();
                             ui.livenessUI?.classList.remove('hidden');
@@ -253,7 +253,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                             runCaptureSequence();
                             highScoreStartTime = 0;
                         }
-                    } else if (actualScore > 85 && !isSmiling) {
+                    } else if (actualScore > 70 && !isSmiling) {
                         // High score but no smile
                         highScoreStartTime = 0;
                         ui.livenessUI?.classList.remove('hidden');
