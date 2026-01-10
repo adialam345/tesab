@@ -1,0 +1,73 @@
+<div class="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm flex flex-col gap-5">
+    <div class="flex items-center gap-3">
+        <div class="text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+        </div>
+        <div class="font-extrabold text-lg text-slate-900">Verifikasi Wajah</div>
+    </div>
+    
+    <div class="relative w-full aspect-[4/3] bg-slate-900 rounded-3xl overflow-hidden ring-1 ring-slate-200 shadow-inner">
+        <video id="video" autoplay playsinline class="w-full h-full object-cover"></video>
+        <canvas id="canvas" class="hidden"></canvas>
+        <img id="photo" class="hidden w-full h-full object-cover" />
+        
+        <!-- Liveness Overlay -->
+        <div id="livenessUI" class="absolute inset-x-0 bottom-6 flex justify-center z-50 px-4 hidden">
+            <div class="bg-slate-900/95 backdrop-blur-xl p-5 rounded-2xl flex flex-col items-center gap-3 w-full max-w-[280px] shadow-2xl border border-white/10">
+                <div id="livenessInstruction" class="font-black text-[11px] text-white uppercase tracking-[0.1em] text-center">
+                    Posisikan Wajah
+                </div>
+                <div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div id="livenessProgress" class="h-full w-0 bg-indigo-500 transition-all duration-100 shadow-[0_0_12px_rgba(79,70,229,0.8)]"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-[220px] h-[280px] border-2 border-dashed border-white/40 rounded-[50%/45%] shadow-[0_0_0_9999px_rgba(30,41,59,0.5)] relative overflow-hidden">
+                <!-- Scanning Line -->
+                <div id="scanLine" class="absolute left-0 right-0 h-1 bg-indigo-500/50 shadow-[0_0_15px_#4f46e5] top-0 animate-scan"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex gap-3 justify-center">
+        <button id="captureBtn" class="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-indigo-600 text-white rounded-2xl font-bold text-sm transition-all hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            Ambil Foto
+        </button>
+        <button id="galleryBtn" class="flex items-center justify-center gap-2 py-3.5 px-6 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm transition-all hover:bg-slate-200 active:scale-95 border border-slate-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <span class="hidden sm:inline">Galeri</span>
+        </button>
+        <button id="retakeBtn" class="hidden flex-1 flex items-center justify-center gap-2 py-3.5 px-6 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm transition-all hover:bg-slate-200 active:scale-95 border border-slate-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            Ulangi
+        </button>
+        <input type="file" id="fileInput" accept="image/*" class="hidden" />
+    </div>
+    
+    <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl text-[11px] leading-relaxed text-slate-500 border border-slate-100">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <p>Gunakan browser <strong>Chrome</strong> & koneksi <strong>HTTPS</strong> untuk fitur kamera terbaik & akurasi deteksi wajah.</p>
+    </div>
+</div>
+
+<style>
+    @keyframes scan {
+        0% { top: 0; opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { top: 100%; opacity: 0; }
+    }
+
+    .animate-scan {
+        animation: scan 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Keep the overlay logic for internal JS manipulation */
+    .liveness-overlay:not(.hidden) {
+        display: flex !important;
+    }
+</style>
+

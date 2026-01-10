@@ -1,899 +1,242 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import LocationStatus from '../components/LocationStatus.astro';
+import CameraPreview from '../components/CameraPreview.astro';
+import AttendanceInfo from '../components/AttendanceInfo.astro';
 ---
 
-<Layout>
-    <div class="absensi-container">
-        <header class="dashboard-header glass">
-            <div class="container">
-                <div class="user-info">
-                    <div class="avatar" id="userAvatar">👤</div>
-                    <div class="details">
-                        <span class="welcome">Selamat Datang,</span>
-                        <span class="name" id="userName">User</span>
+<Layout title="Dashboard Absensi - AbsenTech">
+    <div class="min-h-screen bg-slate-50 pb-12">
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Akses Pegawai</span>
+                        <span class="font-extrabold text-slate-900 text-sm" id="userName">Verifikasi Akun...</span>
                     </div>
                 </div>
-                <button id="logoutBtn" class="logout-btn">Log out</button>
+                <button id="logoutBtn" class="flex items-center gap-2 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 px-4 rounded-xl text-xs font-bold transition-all hover:bg-rose-100 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span class="hidden sm:inline">Keluar</span>
+                </button>
             </div>
         </header>
 
-        <main class="dashboard-main container">
-            <div class="status-card glass" id="locationStatus">
-                <div class="status-icon">📍</div>
-                <div class="status-content">
-                    <h3>Lokasi Absensi</h3>
-                    <p id="targetName">Memuat data lokasi...</p>
-                    <p id="targetAddress" class="small-text"></p>
-                </div>
-                <div class="status-badge" id="statusBadge">Checking...</div>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
+            <div class="animate-fade-in">
+                <LocationStatus />
             </div>
-
-            <div class="action-grid">
-                <div class="camera-card glass">
-                    <div class="camera-title">Verifikasi Wajah</div>
-                    <div class="camera-preview-container">
-                        <video id="video" autoplay playsinline class="camera-preview"></video>
-                        <canvas id="canvas" class="hidden"></canvas>
-                        <img id="photo" class="hidden camera-preview" />
-                        
-                        <!-- Liveness Check UI -->
-                        <div id="livenessUI" class="liveness-overlay">
-                            <div class="liveness-status">
-                                <span id="livenessInstruction">Posisikan Wajah</span>
-                                <div class="progress-bar-container">
-                                    <div id="livenessProgress" class="progress-bar-fill"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="camera-overlay">
-                            <div class="face-guide"></div>
-                        </div>
-                    </div>
-                    <div class="camera-controls">
-                        <button id="captureBtn" class="btn secondary">Ambil Foto</button>
-                        <button id="galleryBtn" class="btn secondary">Pilih dari Galeri</button>
-                        <button id="retakeBtn" class="btn secondary hidden">Ulangi</button>
-                        <input type="file" id="fileInput" accept="image/*" class="hidden" />
-                    </div>
-                    <p class="camera-note">⚠️ Kamera membutuhkan <strong>HTTPS</strong>. Jika tidak muncul, gunakan tombol 'Pilih dari Galeri'.</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 lg:gap-8 items-start">
+                <div class="animate-slide-in-left">
+                    <CameraPreview />
                 </div>
-
-                <div class="attendance-card glass">
-                    <div class="info-item">
-                        <span class="label">Target Lat/Long</span>
-                        <span class="value" id="coords">...</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Radius</span>
-                        <span class="value" id="radius">...</span>
-                    </div>
-                    <div class="info-item vertical">
-                        <div class="label-row">
-                            <span class="label">Pencocokan Wajah</span>
-                            <span class="value" id="faceMatch">Mencari...</span>
-                        </div>
-                        <div class="progress-bar-container mini">
-                            <div id="faceMatchProgress" class="progress-bar-fill"></div>
-                        </div>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Status Lokasi</span>
-                        <span class="value success" id="locationMatch">📍 Terhubung</span>
-                    </div>
-
-                    <div class="spacer"></div>
-
-                    <button id="checkInBtn" class="btn primary full-width" disabled>
-                        Check In Sekarang
-                    </button>
-                    
-                    <div id="checkInStatus" class="mt-4 text-center hidden"></div>
+                <div class="animate-slide-in-right">
+                    <AttendanceInfo />
                 </div>
             </div>
         </main>
     </div>
-    
-    <!-- Face API JS -->
     <script is:inline src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </Layout>
 
 <script>
-    // Constants
+    import { initCamera, loadFaceModels, extractFaceEmbedding, generateDummyEmbedding } from '../utils/camera';
+    import { getRandomOffset, fetchLocation, submitCheckIn } from '../utils/location';
+    import { updateLivenessProgress } from '../utils/liveness';
+
     const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
 
-    // State
-    interface LocationData {
-        name: string;
-        address: string;
-        latitude: number;
-        longitude: number;
-        radius_meters: number;
-        id: number;
-    }
+    const state = {
+        targetLocation: null as any,
+        capturedPhoto: null as string | null,
+        faceEmbedding: null as number[] | null,
+        isCheckingLiveness: false,
+        livenessStartTime: 0,
+        token: localStorage.getItem('access_token')
+    };
 
-    let targetLocation: LocationData | null = null;
-    let capturedPhoto: string | null = null;
-    let faceEmbedding: number[] | null = null;
+    const ui = {
+        video: document.getElementById('video') as HTMLVideoElement,
+        canvas: document.getElementById('canvas') as HTMLCanvasElement,
+        photo: document.getElementById('photo') as HTMLImageElement,
+        captureBtn: document.getElementById('captureBtn'),
+        galleryBtn: document.getElementById('galleryBtn'),
+        retakeBtn: document.getElementById('retakeBtn'),
+        fileInput: document.getElementById('fileInput') as HTMLInputElement,
+        checkInBtn: document.getElementById('checkInBtn') as HTMLButtonElement,
+        checkInStatus: document.getElementById('checkInStatus'),
+        livenessUI: document.getElementById('livenessUI'),
+        livenessInstruction: document.getElementById('livenessInstruction'),
+        livenessProgress: document.getElementById('livenessProgress'),
+        faceMatch: document.getElementById('faceMatch'),
+        faceMatchProgress: document.getElementById('faceMatchProgress')
+    };
 
-    // Elements
-    const video = document.getElementById('video') as HTMLVideoElement;
-    const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-    const photo = document.getElementById('photo') as HTMLImageElement;
-    const captureBtn = document.getElementById('captureBtn');
-    const galleryBtn = document.getElementById('galleryBtn');
-    const retakeBtn = document.getElementById('retakeBtn');
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-    const checkInBtn = document.getElementById('checkInBtn') as HTMLButtonElement;
-    const targetNameEl = document.getElementById('targetName');
-    const targetAddressEl = document.getElementById('targetAddress');
-    const coordsEl = document.getElementById('coords');
-    const radiusEl = document.getElementById('radius');
-    const statusBadge = document.getElementById('statusBadge');
-    const checkInStatus = document.getElementById('checkInStatus');
-    const logoutBtn = document.getElementById('logoutBtn');
+    if (!state.token) window.location.href = '/login';
 
-    // Auth check
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-        window.location.href = '/login';
-    }
-
-    // Initialize Camera
-    async function initCamera() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            console.warn("Camera API not available. This is likely due to using HTTP instead of HTTPS.");
-            return;
-        }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'user' }, 
-                audio: false 
-            });
-            video.srcObject = stream;
-        } catch (err) {
-            console.error("Error accessing camera:", err);
-        }
-    }
-
-    // Helper to process captured/uploaded photo
     async function processPhoto(dataUrl: string) {
-        capturedPhoto = dataUrl;
-        photo.src = dataUrl;
+        state.capturedPhoto = dataUrl;
+        ui.photo.src = dataUrl;
+        ui.video.classList.add('hidden');
+        ui.photo.classList.remove('hidden');
+        ui.captureBtn?.classList.add('hidden');
+        ui.galleryBtn?.classList.add('hidden');
+        ui.retakeBtn?.classList.remove('hidden');
+
+        state.faceEmbedding = await extractFaceEmbedding(ui.photo) || generateDummyEmbedding();
+        if (state.targetLocation) ui.checkInBtn.disabled = false;
+    }
+
+    async function runCaptureSequence() {
+        if (!state.isCheckingLiveness) return;
         
-        video.classList.add('hidden');
-        photo.classList.remove('hidden');
-        captureBtn?.classList.add('hidden');
-        galleryBtn?.classList.add('hidden');
-        retakeBtn?.classList.remove('hidden');
-
-        // Extract embedding if models are loaded
-        try {
-            // @ts-ignore
-            const detections = await faceapi.detectSingleFace(photo, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-            if (detections) {
-                faceEmbedding = Array.from(detections.descriptor);
-                console.log("Face embedding generated");
-            } else {
-                console.warn("No face detected, using dummy embedding");
-                faceEmbedding = Array(128).fill(0).map(() => (Math.random() - 0.5) * 0.1);
-            }
-        } catch (e) {
-            console.warn("Face embedding extraction failed", e);
-            faceEmbedding = Array(128).fill(0).map(() => (Math.random() - 0.5) * 0.1);
+        if (ui.livenessInstruction) {
+            ui.livenessInstruction.innerHTML = `
+                <div class="flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span class="text-[13px] font-black tracking-widest text-white uppercase">Mengambil Foto...</span>
+                </div>
+            `;
         }
+        if (ui.livenessProgress) ui.livenessProgress.style.width = `100%`;
 
-        if (targetLocation) {
-            checkInBtn.disabled = false;
-        }
+        // Pulse the scanning line or something to indicate capture
+        setTimeout(async () => {
+            state.isCheckingLiveness = false;
+            ui.canvas.width = ui.video.videoWidth;
+            ui.canvas.height = ui.video.videoHeight;
+            ui.canvas.getContext('2d')?.drawImage(ui.video, 0, 0);
+            await processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8));
+            ui.livenessUI?.classList.add('hidden');
+        }, 800);
     }
 
-    // Liveness Detection State
-    let livenessStep = 1; // 1: Turn Left, 2: Turn Right, 3: Smile, 4: Done
-    let livenessProgressValue = 0;
-    const livenessInstruction = document.getElementById('livenessInstruction');
-    const livenessProgress = document.getElementById('livenessProgress');
-    const livenessUI = document.getElementById('livenessUI');
-    let isCheckingLiveness = false;
-    let livenessStartTime = 0;
-
-    async function startLivenessCheck() {
-        if (!video || !livenessUI) return;
-        livenessUI.classList.remove('hidden');
-        livenessStep = 1;
-        livenessProgressValue = 0;
-        isCheckingLiveness = true;
-        livenessStartTime = Date.now();
-        updateLivenessUI();
-        runLivenessSequence();
-    }
-
-    async function runLivenessSequence() {
-        if (!isCheckingLiveness) return;
-
-        const elapsed = Date.now() - livenessStartTime;
-        const stepDuration = 2000; // 2 seconds per step
-        const currentStep = Math.floor(elapsed / stepDuration) + 1;
-
-        // Update instruction based on step
-        if (currentStep === 1) {
-            livenessInstruction!.textContent = "Tengok Kiri ⬅️";
-            livenessProgressValue = Math.min((elapsed / stepDuration) * 33, 33);
-        } else if (currentStep === 2) {
-            livenessInstruction!.textContent = "Tengok Kanan ➡️";
-            livenessProgressValue = 33 + Math.min(((elapsed - stepDuration) / stepDuration) * 33, 33);
-        } else if (currentStep === 3) {
-            livenessInstruction!.textContent = "Tersenyum 😊";
-            livenessProgressValue = 66 + Math.min(((elapsed - stepDuration * 2) / stepDuration) * 34, 34);
-        } else if (currentStep >= 4) {
-            livenessProgressValue = 100;
-            livenessInstruction!.textContent = "Verifikasi Selesai ✓";
-            updateLivenessUI();
-            isCheckingLiveness = false;
-            setTimeout(() => autoCapture(), 500);
-            return;
-        }
-
-        updateLivenessUI();
-
-        // Try to detect face for progress feedback
-        try {
-            // @ts-ignore
-            const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-
-            const faceMatchEl = document.getElementById('faceMatch');
-            const faceMatchProgress = document.getElementById('faceMatchProgress');
-            
-            if (detection) {
-                const confidence = Math.round(detection.detection.score * 100);
-                if (faceMatchEl) {
-                    faceMatchEl.textContent = `✅ Cocok (${confidence}%)`;
-                    faceMatchEl.className = 'value success';
-                }
-                if (faceMatchProgress) faceMatchProgress.style.width = `${confidence}%`;
-            } else {
-                if (faceMatchEl) {
-                    faceMatchEl.textContent = '⚠️ Posisikan wajah';
-                    faceMatchEl.className = 'value';
-                }
-                if (faceMatchProgress) faceMatchProgress.style.width = `50%`;
-            }
-        } catch (e) {
-            console.warn("Face detection skipped", e);
-        }
-
-        if (isCheckingLiveness) {
-            requestAnimationFrame(runLivenessSequence);
-        }
-    }
-
-    function updateLivenessUI() {
-        if (livenessProgress) {
-            livenessProgress.style.width = `${livenessProgressValue}%`;
-        }
-    }
-
-    async function autoCapture() {
-        if (!video || !canvas || !photo) return;
-        
-        const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context?.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        await processPhoto(dataUrl);
-        
-        if (livenessUI) livenessUI.classList.add('hidden');
-    }
-
-    // Handle Capture Override
-    captureBtn?.addEventListener('click', async () => {
-        // Instead of instant capture, start liveness sequence
-        startLivenessCheck();
+    ui.captureBtn?.addEventListener('click', () => {
+        ui.livenessUI?.classList.remove('hidden');
+        state.isCheckingLiveness = true;
+        runCaptureSequence();
     });
 
-    // Handle Gallery Upload
-    galleryBtn?.addEventListener('click', () => {
-        fileInput?.click();
-    });
-
-    fileInput?.addEventListener('change', (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
+    ui.galleryBtn?.addEventListener('click', () => ui.fileInput?.click());
+    ui.fileInput?.addEventListener('change', (e: any) => {
+        const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = async (e) => {
-                const dataUrl = e.target?.result as string;
-                await processPhoto(dataUrl);
-            };
+            reader.onload = (e) => processPhoto(e.target?.result as string);
             reader.readAsDataURL(file);
         }
     });
 
-    // Handle Retake
-    retakeBtn?.addEventListener('click', () => {
-        video.classList.remove('hidden');
-        photo.classList.add('hidden');
-        captureBtn?.classList.remove('hidden');
-        galleryBtn?.classList.remove('hidden');
-        retakeBtn.classList.add('hidden');
-        capturedPhoto = null;
-        faceEmbedding = null;
-        checkInBtn.disabled = true;
+    ui.retakeBtn?.addEventListener('click', () => {
+        ui.video.classList.remove('hidden');
+        ui.photo.classList.add('hidden');
+        ui.captureBtn?.classList.remove('hidden');
+        ui.galleryBtn?.classList.remove('hidden');
+        ui.retakeBtn.classList.add('hidden');
+        state.capturedPhoto = null;
+        state.faceEmbedding = null;
+        ui.checkInBtn.disabled = true;
     });
 
-    // Helper to randomize coordinates within a radius
-    function getRandomOffset(radiusMeters: number, latitude: number) {
-        const r = radiusMeters * Math.sqrt(Math.random());
-        const theta = Math.random() * 2 * Math.PI;
-        
-        // 1 degree latitude ~= 111,111 meters
-        const deltaLat = (r * Math.cos(theta)) / 111111;
-        // 1 degree longitude ~= 111,111 * cos(lat) meters
-        const deltaLng = (r * Math.sin(theta)) / (111111 * Math.cos(latitude * Math.PI / 180));
-        
-        return { deltaLat, deltaLng };
-    }
+    ui.checkInBtn?.addEventListener('click', async () => {
+        if (!state.targetLocation || !state.capturedPhoto || !ui.checkInStatus || !state.token) return;
+        ui.checkInBtn.disabled = true;
+        ui.checkInBtn.textContent = 'Mengirim...';
+        ui.checkInStatus.classList.remove('hidden');
+        ui.checkInStatus.className = 'status-message info-text';
 
-    // Handle Check-in
-    checkInBtn?.addEventListener('click', async () => {
-        if (!targetLocation || !capturedPhoto || !checkInStatus) return;
-
-        checkInBtn.disabled = true;
-        checkInBtn.textContent = 'Sedang Memproses...';
-        checkInStatus.classList.remove('hidden');
-        checkInStatus.textContent = 'Mengirim data absensi...';
-        checkInStatus.className = 'mt-4 text-center info-text';
-
-        // Randomize coordinates within 20 meters of target
-        const offset = getRandomOffset(20, targetLocation.latitude);
-        const finalLat = targetLocation.latitude + offset.deltaLat;
-        const finalLng = targetLocation.longitude + offset.deltaLng;
-
+        const offset = getRandomOffset(20, state.targetLocation.latitude);
         const payload = {
-            lat: finalLat,
-            lng: finalLng,
+            lat: state.targetLocation.latitude + offset.deltaLat,
+            lng: state.targetLocation.longitude + offset.deltaLng,
             device_id: USER_AGENT,
-            photo_base64: capturedPhoto,
-            face_embedding: faceEmbedding || Array(128).fill(0),
+            photo_base64: state.capturedPhoto,
+            face_embedding: state.faceEmbedding,
             is_mock_location: false,
             location_accuracy: 8.885000228881836
         };
 
-        // Show request payload
-        const requestPreview = document.createElement('pre');
-        requestPreview.style.cssText = 'background: rgba(99, 102, 241, 0.1); padding: 1rem; border-radius: 8px; font-size: 0.75rem; text-align: left; overflow-x: auto; margin-top: 0.5rem; max-height: 200px; overflow-y: auto;';
+        console.log('--- Check-In Payload ---');
+        console.log('Full Payload:', payload);
+        console.log('Face Embedding:', payload.face_embedding);
+        console.log('------------------------');
+
+        const result = await submitCheckIn(state.token, payload);
+        ui.checkInStatus.innerHTML = result.ok ? '<strong>✅ Absensi Berhasil Disimpan</strong>' : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
+        ui.checkInStatus.className = `status-message mt-4 ${result.ok ? 'success-text' : 'error-text'}`;
         
-        // Create a copy without the full base64 image for readability
-        const payloadPreview = {
-            ...payload,
-            photo_base64: payload.photo_base64.substring(0, 100) + '... (truncated)',
-            face_embedding: `[${payload.face_embedding.slice(0, 5).map(n => n.toFixed(4)).join(', ')}... (${payload.face_embedding.length} values)]`
-        };
-        requestPreview.textContent = JSON.stringify(payloadPreview, null, 2);
-        
-        checkInStatus.innerHTML = '<strong>📤 Mengirim Request...</strong><br><small>Payload:</small>';
-        checkInStatus.appendChild(requestPreview);
-        checkInStatus.className = 'mt-4 text-center info-text';
-
-        try {
-            const response = await fetch('/api/checkin', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            // Display full JSON response
-            const responsePreview = document.createElement('pre');
-            responsePreview.style.cssText = 'background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 8px; font-size: 0.75rem; text-align: left; overflow-x: auto; margin-top: 0.5rem;';
-            responsePreview.textContent = JSON.stringify(data, null, 2);
-
-            if (response.ok) {
-                checkInStatus.innerHTML = '<strong>✅ Absensi Berhasil!</strong><br><small>Request:</small>';
-                checkInStatus.appendChild(requestPreview.cloneNode(true));
-                const responseLabelEl = document.createElement('small');
-                responseLabelEl.textContent = 'Server Response:';
-                responseLabelEl.style.display = 'block';
-                responseLabelEl.style.marginTop = '1rem';
-                checkInStatus.appendChild(responseLabelEl);
-                checkInStatus.appendChild(responsePreview);
-                checkInStatus.className = 'mt-4 text-center success-text';
-                checkInBtn.textContent = 'Absensi Selesai';
-            } else {
-                checkInStatus.innerHTML = `<strong>❌ Gagal (${response.status})</strong><br><small>Request:</small>`;
-                checkInStatus.appendChild(requestPreview.cloneNode(true));
-                const responseLabelEl = document.createElement('small');
-                responseLabelEl.textContent = 'Server Response:';
-                responseLabelEl.style.display = 'block';
-                responseLabelEl.style.marginTop = '1rem';
-                checkInStatus.appendChild(responseLabelEl);
-                checkInStatus.appendChild(responsePreview);
-                checkInStatus.className = 'mt-4 text-center error-text';
-                checkInBtn.disabled = false;
-                checkInBtn.textContent = 'Coba Lagi';
-            }
-        } catch (error) {
-            checkInStatus.innerHTML = `<strong>❌ Terjadi kesalahan koneksi</strong><br><small>Request:</small>`;
-            checkInStatus.appendChild(requestPreview);
-            const errorEl = document.createElement('small');
-            errorEl.textContent = `Error: ${error}`;
-            errorEl.style.display = 'block';
-            errorEl.style.marginTop = '0.5rem';
-            checkInStatus.appendChild(errorEl);
-            checkInStatus.className = 'mt-4 text-center error-text';
-            checkInBtn.disabled = false;
-            checkInBtn.textContent = 'Coba Lagi';
+        if (!result.ok) {
+            ui.checkInBtn.disabled = false;
+            ui.checkInBtn.textContent = 'Coba Lagi';
+        } else {
+            ui.checkInBtn.textContent = 'Selesai';
         }
     });
 
-    logoutBtn?.addEventListener('click', () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('token_type');
+    function updateFaceDetection() {
+        (async () => {
+            // @ts-ignore
+            if (ui.video.paused || ui.video.ended || !state.capturedPhoto === null) return;
+            
+            const detection = await faceapi.detectSingleFace(ui.video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+            const faceStatusDot = document.getElementById('faceStatusDot');
+
+            if (ui.faceMatch) {
+                if (detection) {
+                    const score = Math.round(detection.detection.score * 100);
+                    ui.faceMatch.textContent = `Verifikasi Aktif (${score}%)`;
+                    ui.faceMatch.className = 'text-indigo-600 font-extrabold';
+                    if (faceStatusDot) {
+                        faceStatusDot.className = 'w-1.5 h-1.5 rounded-full dot-success animate-pulse-slow';
+                    }
+                } else {
+                    ui.faceMatch.textContent = 'Mencari Wajah...';
+                    ui.faceMatch.className = 'text-slate-400 font-bold';
+                    if (faceStatusDot) {
+                        faceStatusDot.className = 'w-1.5 h-1.5 rounded-full dot-searching animate-pulse-slow';
+                    }
+                }
+            }
+            if (ui.faceMatchProgress) {
+                ui.faceMatchProgress.style.width = detection ? `${Math.round(detection.detection.score * 100)}%` : '15%';
+            }
+        })();
+        requestAnimationFrame(updateFaceDetection);
+    }
+
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        localStorage.clear();
         window.location.href = '/login';
     });
 
-    // Load Models for face-api
-    async function loadModels() {
-        try {
-            // @ts-ignore
-            await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            // @ts-ignore
-            await faceapi.nets.faceRecognitionNet.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            // @ts-ignore
-            await faceapi.nets.faceLandmark68Net.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            // @ts-ignore
-            await faceapi.nets.faceExpressionNet.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights');
-            console.log("Models loaded");
-        } catch (e) {
-            console.warn("Face API models failed to load, will use basic capture", e);
-        }
-    }
-
-    // Fetch Target Location
-    async function fetchLocation() {
-        if (!token) return;
-        
-        try {
-            const response = await fetch('/api/location', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                targetLocation = data;
-                if (targetNameEl) targetNameEl.textContent = data.name;
-                if (targetAddressEl) targetAddressEl.textContent = data.address;
-                if (coordsEl) coordsEl.textContent = `${data.latitude}, ${data.longitude}`;
-                if (radiusEl) radiusEl.textContent = `${data.radius_meters}m`;
-                
-                if (statusBadge) {
-                    statusBadge.textContent = 'Lokasi Sesuai';
-                    statusBadge.className = 'status-badge success';
-                }
-
-                const locationMatch = document.getElementById('locationMatch');
-                if (locationMatch) {
-                    locationMatch.textContent = '📍 Terdeteksi Otomatis';
-                    locationMatch.className = 'value success';
-                }
-                
-                checkInBtn.disabled = !capturedPhoto;
-            } else {
-                if (targetNameEl) targetNameEl.textContent = 'Gagal memuat lokasi';
-                if (statusBadge) {
-                    statusBadge.textContent = 'Error';
-                    statusBadge.className = 'status-badge error';
-                }
+    (async () => {
+        initCamera(ui.video);
+        loadFaceModels();
+        updateFaceDetection();
+        const loc = await fetchLocation(state.token || '');
+        if (loc) {
+            state.targetLocation = loc;
+            const targetNameEl = document.getElementById('targetName');
+            const targetAddressEl = document.getElementById('targetAddress');
+            const coordsEl = document.getElementById('coords');
+            const radiusEl = document.getElementById('radius');
+            const statusBadge = document.getElementById('statusBadge');
+            
+            if (targetNameEl) targetNameEl.textContent = loc.name;
+            if (targetAddressEl) targetAddressEl.textContent = loc.address;
+            if (coordsEl) coordsEl.textContent = `${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}`;
+            if (radiusEl) radiusEl.textContent = `${loc.radius_meters}m`;
+            if (statusBadge) {
+                statusBadge.textContent = 'Sesuai';
+                statusBadge.classList.add('success');
             }
-        } catch (error) {
-            console.error("Error fetching location:", error);
+            
+            const userNameEl = document.getElementById('userName');
+            if (userNameEl) userNameEl.textContent = 'Pegawai Kinerja';
         }
-    }
-
-    // Start
-    initCamera();
-    loadModels();
-    fetchLocation();
+    })();
 </script>
-
-<style>
-    .absensi-container {
-        min-height: 100vh;
-        padding-bottom: 2rem;
-    }
-
-    .container {
-        max-width: 100%;
-        padding: 0 1rem;
-    }
-
-    .dashboard-header {
-        padding: 1rem 0;
-        margin-bottom: 1.5rem;
-        border-radius: 0 0 16px 16px;
-        border-top: none;
-    }
-
-    .dashboard-header .container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .avatar {
-        width: 40px;
-        height: 40px;
-        background: var(--primary);
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-    }
-
-    .details {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .welcome {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-    }
-
-    .name {
-        font-weight: 700;
-        font-size: 0.95rem;
-    }
-
-    .logout-btn {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--glass-border);
-        color: var(--text-muted);
-        padding: 0.4rem 0.8rem;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .logout-btn:hover {
-        background: rgba(239, 68, 68, 0.1);
-        color: #f87171;
-        border-color: rgba(239, 68, 68, 0.2);
-    }
-
-    .dashboard-main {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .status-card {
-        padding: 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .status-icon {
-        width: 50px;
-        height: 50px;
-        background: rgba(99, 102, 241, 0.1);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        flex-shrink: 0;
-    }
-
-    .status-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .status-content h3 {
-        margin-bottom: 0.25rem;
-        font-size: 1rem;
-    }
-
-    .small-text {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .status-badge {
-        padding: 0.4rem 0.8rem;
-        border-radius: 99px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text-muted);
-        flex-shrink: 0;
-    }
-
-    .status-badge.success {
-        background: rgba(34, 197, 94, 0.1);
-        color: #4ade80;
-        border: 1px solid rgba(34, 197, 94, 0.2);
-    }
-
-    .status-badge.error {
-        background: rgba(239, 68, 68, 0.1);
-        color: #f87171;
-        border: 1px solid rgba(239, 68, 68, 0.2);
-    }
-
-    .action-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .camera-card {
-        padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .camera-title {
-        font-weight: 700;
-        font-size: 1.1rem;
-    }
-
-    .camera-preview-container {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 4/3;
-        background: #000;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    .camera-preview {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .camera-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
-    }
-
-    .face-guide {
-        width: 200px;
-        height: 250px;
-        border: 2px dashed rgba(255, 255, 255, 0.5);
-        border-radius: 50% / 40%;
-        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-    }
-
-    .camera-controls {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: none;
-        cursor: pointer;
-        min-height: 44px; /* Touch-friendly */
-    }
-
-    .btn.primary {
-        background: var(--primary);
-        color: white;
-        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
-    }
-
-    .btn.primary:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.5);
-        background: var(--primary-hover);
-    }
-
-    .btn.primary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .btn.secondary {
-        border: 1px solid var(--glass-border);
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text-main);
-    }
-
-    .btn.secondary:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    .attendance-card {
-        padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .info-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--glass-border);
-    }
-
-    .info-item .label {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-    }
-
-    .info-item .value {
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-align: right;
-    }
-
-    .value.success {
-        color: #4ade80;
-    }
-
-    .spacer {
-        flex: 1;
-        min-height: 1rem;
-    }
-
-    .mt-4 { margin-top: 1rem; }
-    .text-center { text-align: center; }
-    
-    .info-text { color: var(--primary); font-size: 0.85rem; }
-    .success-text { color: #4ade80; font-weight: 700; font-size: 0.9rem; }
-    .error-text { color: #f87171; font-size: 0.85rem; }
-
-    .hidden { display: none; }
-
-    .full-width { width: 100%; }
-
-    .camera-note {
-        font-size: 0.75rem;
-        color: #f87171;
-        margin-top: 0.5rem;
-        text-align: center;
-        background: rgba(239, 68, 68, 0.1);
-        padding: 0.5rem;
-        border-radius: 8px;
-        line-height: 1.4;
-    }
-
-    .liveness-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.2);
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        align-items: center;
-        padding-bottom: 1.5rem;
-        z-index: 100;
-        pointer-events: none;
-    }
-
-    .liveness-status {
-        background: rgba(15, 23, 42, 0.85);
-        backdrop-filter: blur(8px);
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        border: 1px solid var(--glass-border);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        min-width: 200px;
-        max-width: 90%;
-    }
-
-    #livenessInstruction {
-        font-weight: 700;
-        font-size: 0.9rem;
-        color: var(--text-main);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .progress-bar-container {
-        width: 100%;
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 99px;
-        overflow: hidden;
-    }
-
-    .progress-bar-fill {
-        height: 100%;
-        width: 0%;
-        background: linear-gradient(90deg, var(--primary), var(--accent));
-        transition: width 0.1s linear;
-        box-shadow: 0 0 10px var(--primary);
-    }
-
-    .info-item.vertical {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-
-    .label-row {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .progress-bar-container.mini {
-        height: 4px;
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .text-error, .error {
-        color: #f87171 !important;
-    }
-
-    /* Desktop adjustments */
-    @media (min-width: 768px) {
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 2rem;
-        }
-
-        .camera-card, .attendance-card {
-            padding: 2rem;
-        }
-
-        .status-card {
-            padding: 2rem;
-        }
-    }
-</style>

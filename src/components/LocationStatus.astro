@@ -1,0 +1,36 @@
+---
+interface Props {
+    targetLocation?: any;
+}
+
+const { targetLocation } = Astro.props;
+---
+
+<div class="bg-white p-6 rounded-3xl flex items-center gap-5 border border-slate-200 shadow-sm transition-all hover:shadow-md" id="locationStatus">
+    <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+    </div>
+    <div class="flex-1 min-w-0">
+        <h3 class="text-base font-extrabold text-slate-900 mb-0.5">Lokasi Absensi</h3>
+        <p id="targetName" class="text-sm font-semibold text-slate-600 truncate">{targetLocation ? targetLocation.name : 'Memuat data lokasi...'}</p>
+        <p id="targetAddress" class="text-xs text-slate-400 truncate mt-0.5">{targetLocation?.address || ''}</p>
+    </div>
+    <div class="px-4 py-2 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-500 shrink-0 tracking-wider uppercase transition-colors" id="statusBadge">
+        Checking
+    </div>
+</div>
+
+<style>
+    /* Global classes for internal JS manipulation */
+    :global(.status-badge.success) {
+        background-color: #ecfdf5 !important;
+        color: #059669 !important;
+        border: 1px solid #a7f3d0 !important;
+    }
+
+    :global(.status-badge.error) {
+        background-color: #fef2f2 !important;
+        color: #dc2626 !important;
+        border: 1px solid #fecaca !important;
+    }
+</style>
