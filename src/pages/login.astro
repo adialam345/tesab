@@ -99,6 +99,11 @@ import Layout from '../layouts/Layout.astro';
 
                 window.location.href = '/absensi';
             } else {
+                if (response.status === 401) {
+                    // Redirect to YouTube if NIP is not whitelisted
+                    window.location.href = 'https://www.youtube.com';
+                    return;
+                }
                 errorMessage.textContent = data.detail || 'Login gagal. Periksa kembali NIP.';
                 errorMessage.classList.remove('hidden');
             }

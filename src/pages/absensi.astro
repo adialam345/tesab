@@ -114,9 +114,24 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         // Pulse the scanning line or something to indicate capture
         setTimeout(async () => {
             state.isCheckingLiveness = false;
-            ui.canvas.width = ui.video.videoWidth;
-            ui.canvas.height = ui.video.videoHeight;
-            ui.canvas.getContext('2d')?.drawImage(ui.video, 0, 0);
+            const videoWidth = ui.video.videoWidth;
+            const videoHeight = ui.video.videoHeight;
+            const size = Math.min(videoWidth, videoHeight);
+            const x = (videoWidth - size) / 2;
+            const y = (videoHeight - size) / 2;
+            
+            // Set canvas to 229x229 for specific square upload size
+            ui.canvas.width = 229;
+            ui.canvas.height = 229;
+            const ctx = ui.canvas.getContext('2d');
+            
+            if (ctx) {
+                // Ensure high quality image smoothing
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(ui.video, x, y, size, size, 0, 0, 229, 229);
+            }
+
             await processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8));
             ui.livenessUI?.classList.add('hidden');
         }, 200);
@@ -133,7 +148,29 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => processPhoto(e.target?.result as string);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const videoWidth = img.width;
+                    const videoHeight = img.height;
+                    const size = Math.min(videoWidth, videoHeight);
+                    const x = (videoWidth - size) / 2;
+                    const y = (videoHeight - size) / 2;
+                    
+                    ui.canvas.width = 229;
+                    ui.canvas.height = 229;
+                    const ctx = ui.canvas.getContext('2d');
+                    
+                    if (ctx) {
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, x, y, size, size, 0, 0, 229, 229);
+                    }
+                    
+                    processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.src = e.target?.result as string;
+            };
             reader.readAsDataURL(file);
         }
     });

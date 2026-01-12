@@ -1,0 +1,171 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CameraPreview from '../components/CameraPreview.astro';
+---
+
+<Layout title="Test Photo Capture">
+    <div class="min-h-screen bg-slate-50 py-12 px-4">
+        <div class="max-w-4xl mx-auto space-y-8">
+            <div class="text-center">
+                <h1 class="text-3xl font-black text-slate-900">Uji Coba Crop Foto</h1>
+                <p class="text-slate-500 mt-2 font-medium">Halaman ini digunakan untuk mengetes hasil crop 480x480</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <!-- Camera Section -->
+                <div class="space-y-4">
+                    <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest px-1">Kamera / Input</h2>
+                    <CameraPreview />
+                </div>
+
+                <!-- Result Section -->
+                <div class="space-y-4">
+                    <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest px-1">Hasil Crop (480x480)</h2>
+                    <div class="bg-white p-6 rounded-[32px] border border-slate-200 shadow-sm flex flex-col gap-4">
+                        <div id="previewContainer" class="hidden space-y-4">
+                            <div class="relative w-full aspect-square bg-slate-100 rounded-2xl overflow-hidden ring-1 ring-slate-200">
+                                <img id="resultImage" class="w-full h-full object-cover" />
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <span class="block text-[10px] font-black text-slate-400 uppercase">Input Size</span>
+                                    <span id="inputDim" class="text-sm font-bold text-slate-700">-</span>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <span class="block text-[10px] font-black text-slate-400 uppercase">Output Size</span>
+                                    <span id="outputDim" class="text-sm font-bold text-slate-700">229 x 229</span>
+                                </div>
+                            </div>
+                            <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                <span class="block text-[10px] font-black text-indigo-400 uppercase mb-1">Base64 Length</span>
+                                <span id="b64Length" class="text-xs font-mono font-bold text-indigo-600 break-all">-</span>
+                            </div>
+                        </div>
+                        <div id="placeholder" class="aspect-square flex flex-col items-center justify-center text-slate-300 border-2 border-dashed border-slate-100 rounded-2xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span class="text-xs font-bold uppercase tracking-widest">Belum Ada Foto</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center pt-8">
+                <a href="/absensi" class="text-sm font-black text-indigo-600 hover:text-indigo-700 transition-all uppercase tracking-widest"> Kembali ke Absensi </a>
+            </div>
+        </div>
+    </div>
+
+    <script is:inline src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</Layout>
+
+<script>
+    import { initCamera, loadFaceModels } from '../utils/camera';
+
+    const ui = {
+        video: document.getElementById('video') as HTMLVideoElement,
+        canvas: document.getElementById('canvas') as HTMLCanvasElement,
+        resultImage: document.getElementById('resultImage') as HTMLImageElement,
+        captureBtn: document.getElementById('captureBtn'),
+        galleryBtn: document.getElementById('galleryBtn'),
+        fileInput: document.getElementById('fileInput') as HTMLInputElement,
+        previewContainer: document.getElementById('previewContainer'),
+        placeholder: document.getElementById('placeholder'),
+        inputDim: document.getElementById('inputDim'),
+        b64Length: document.getElementById('b64Length'),
+        livenessUI: document.getElementById('livenessUI'),
+        livenessInstruction: document.getElementById('livenessInstruction'),
+        livenessProgress: document.getElementById('livenessProgress'),
+    };
+
+    function processPhoto(dataUrl: string, originalWidth: number, originalHeight: number) {
+        ui.resultImage.src = dataUrl;
+        ui.previewContainer?.classList.remove('hidden');
+        ui.placeholder?.classList.add('hidden');
+        
+        if (ui.inputDim) ui.inputDim.textContent = `${originalWidth} x ${originalHeight}`;
+        if (ui.b64Length) ui.b64Length.textContent = `${dataUrl.length.toLocaleString()} characters`;
+        
+        console.log('Processed Image:', dataUrl);
+    }
+
+    async function capture() {
+        if (ui.livenessUI) ui.livenessUI.classList.remove('hidden');
+        if (ui.livenessInstruction) {
+             ui.livenessInstruction.innerHTML = `
+                <div class="flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    <span class="text-[13px] font-black tracking-widest text-white uppercase">MENGAMBIL...</span>
+                </div>
+            `;
+        }
+        if (ui.livenessProgress) ui.livenessProgress.style.width = '100%';
+
+        setTimeout(() => {
+            const videoWidth = ui.video.videoWidth;
+            const videoHeight = ui.video.videoHeight;
+            const size = Math.min(videoWidth, videoHeight);
+            const x = (videoWidth - size) / 2;
+            const y = (videoHeight - size) / 2;
+            
+            ui.canvas.width = 229;
+            ui.canvas.height = 229;
+            const ctx = ui.canvas.getContext('2d');
+            
+            if (ctx) {
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(ui.video, x, y, size, size, 0, 0, 229, 229);
+            }
+
+            processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8), videoWidth, videoHeight);
+            ui.livenessUI?.classList.add('hidden');
+        }, 500);
+    }
+
+    ui.captureBtn?.addEventListener('click', capture);
+
+    ui.galleryBtn?.addEventListener('click', () => ui.fileInput?.click());
+    ui.fileInput?.addEventListener('change', (e: any) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const w = img.width;
+                    const h = img.height;
+                    const size = Math.min(w, h);
+                    const x = (w - size) / 2;
+                    const y = (h - size) / 2;
+                    
+                    ui.canvas.width = 229;
+                    ui.canvas.height = 229;
+                    const ctx = ui.canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, x, y, size, size, 0, 0, 229, 229);
+                    }
+                    processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8), w, h);
+                };
+                img.src = ev.target?.result as string;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    (async () => {
+        await initCamera(ui.video);
+        await loadFaceModels();
+    })();
+</script>
+
+<style>
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .5; }
+    }
+</style>
