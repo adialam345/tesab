@@ -46,7 +46,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
 <script>
     import { initCamera, loadFaceModels, extractFaceEmbedding, generateDummyEmbedding } from '../utils/camera';
-    import { getRandomOffset, fetchLocation, submitCheckIn } from '../utils/location';
+    import { getRandomOffset, fetchLocation, submitCheckIn, submitCheckOut } from '../utils/location';
     import { updateLivenessProgress } from '../utils/liveness';
 
     const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
@@ -56,7 +56,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         capturedPhoto: null as string | null,
         faceEmbedding: null as number[] | null,
         isCheckingLiveness: false,
-        livenessStartTime: 0,
+        isCheckingOut: false,
         token: localStorage.getItem('access_token')
     };
 
@@ -166,16 +166,22 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             photo_base64: state.capturedPhoto,
             face_embedding: state.faceEmbedding,
             is_mock_location: false,
-            location_accuracy: 8.885000228881836
+            location_accuracy: 8.5 + Math.random() * 1.5
         };
 
-        console.log('--- Check-In Payload ---');
+        console.log('--- Attendance Payload ---');
         console.log('Full Payload:', payload);
         console.log('Face Embedding:', payload.face_embedding);
+        console.log('Type:', state.isCheckingOut ? 'Check-Out' : 'Check-In');
         console.log('------------------------');
 
-        const result = await submitCheckIn(state.token, payload);
-        ui.checkInStatus.innerHTML = result.ok ? '<strong>✅ Absensi Berhasil Disimpan</strong>' : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
+        const result = state.isCheckingOut 
+            ? await submitCheckOut(state.token, payload)
+            : await submitCheckIn(state.token, payload);
+        
+        ui.checkInStatus.innerHTML = result.ok 
+            ? `<strong>✅ ${state.isCheckingOut ? 'Check-Out' : 'Absensi'} Berhasil Disimpan</strong>` 
+            : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
         ui.checkInStatus.className = `status-message mt-4 ${result.ok ? 'success-text' : 'error-text'}`;
         
         // Show Raw JSON Response
@@ -376,6 +382,15 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                                 outPhotoEl.classList.remove('hidden');
                                 outPhotoPlaceholder.classList.add('hidden');
                             }
+                        }
+                        // Decide if next action is check-out
+                        if (attendData.clock_in && !attendData.clock_out) {
+                            state.isCheckingOut = true;
+                            ui.checkInBtn.textContent = 'Kirim Check-Out';
+                            ui.checkInBtn.classList.replace('bg-indigo-600', 'bg-rose-600');
+                        } else if (attendData.clock_in && attendData.clock_out) {
+                            ui.checkInBtn.textContent = 'Sudah Absen Hari Ini';
+                            ui.checkInBtn.disabled = true;
                         }
                     }
                 }

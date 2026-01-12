@@ -44,3 +44,21 @@ export async function submitCheckIn(token: string, payload: any) {
         return { ok: false, error: String(error) };
     }
 }
+// Submit check-out
+export async function submitCheckOut(token: string, payload: any) {
+    try {
+        const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        return { ok: response.ok, status: response.status, data };
+    } catch (error) {
+        return { ok: false, error: String(error) };
+    }
+}
