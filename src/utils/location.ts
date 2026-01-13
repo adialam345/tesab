@@ -14,12 +14,20 @@ export function getRandomOffset(radiusMeters: number, latitude: number) {
 // Fetch location from API
 export async function fetchLocation(token: string) {
     try {
+        console.log('[fetchLocation] Fetching location data...');
         const response = await fetch('/api/location', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        return await response.json();
+        if (!response.ok) {
+            console.error(`[fetchLocation] Error: ${response.status} ${response.statusText}`);
+            console.error(await response.text());
+            return null;
+        }
+        const data = await response.json();
+        console.log('[fetchLocation] Success:', data);
+        return data;
     } catch (error) {
         console.error("Error fetching location:", error);
         return null;

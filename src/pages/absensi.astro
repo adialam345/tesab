@@ -26,6 +26,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             </div>
         </header>
 
+        <div id="debugLog" class="max-w-7xl mx-auto px-4 mt-4 p-4 bg-black text-green-400 font-mono text-xs rounded-xl overflow-x-auto whitespace-pre-wrap border border-green-900 shadow-lg">Initializing Debugger...</div>
+
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
             <div class="animate-fade-in">
                 <LocationStatus />
@@ -79,7 +81,18 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
     if (!state.token) window.location.href = '/login';
 
+    function logToScreen(msg: string) {
+        const el = document.getElementById('debugLog');
+        if (el) {
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML += `\n[${time}] ${msg}`;
+            el.scrollTop = el.scrollHeight;
+        }
+        console.log(msg); // Keep console.log for developer tools
+    }
+
     async function processPhoto(dataUrl: string) {
+        logToScreen('Processing photo...');
         state.capturedPhoto = dataUrl;
         ui.photo.src = dataUrl;
         ui.video.classList.add('hidden');
@@ -89,17 +102,23 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         ui.retakeBtn?.classList.remove('hidden');
 
         state.faceEmbedding = await extractFaceEmbedding(ui.photo) || generateDummyEmbedding();
-        if (state.targetLocation) ui.checkInBtn.disabled = false;
+        logToScreen('Extracted face embedding.');
+        if (state.targetLocation) {
+            ui.checkInBtn.disabled = false;
+            logToScreen('Check-in button enabled.');
+        }
 
         if (ui.checkInStatus) {
             ui.checkInStatus.innerHTML = '<strong>✅ Foto Berhasil Diambil</strong>';
             ui.checkInStatus.className = 'status-message success-text mt-4';
             ui.checkInStatus.classList.remove('hidden');
+            logToScreen('Photo processing complete, status updated.');
         }
     }
 
     async function runCaptureSequence() {
         if (!state.isCheckingLiveness) return;
+        logToScreen('Starting liveness capture sequence.');
         
         if (ui.livenessInstruction) {
             ui.livenessInstruction.innerHTML = `
@@ -131,20 +150,25 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(ui.video, x, y, size, size, 0, 0, 229, 229);
             }
-
+            logToScreen('Liveness capture complete. Processing photo from video stream.');
             await processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8));
             ui.livenessUI?.classList.add('hidden');
         }, 200);
     }
 
     ui.captureBtn?.addEventListener('click', () => {
+        logToScreen('Capture button clicked. Initiating liveness check.');
         ui.livenessUI?.classList.remove('hidden');
         state.isCheckingLiveness = true;
         runCaptureSequence();
     });
 
-    ui.galleryBtn?.addEventListener('click', () => ui.fileInput?.click());
+    ui.galleryBtn?.addEventListener('click', () => {
+        logToScreen('Gallery button clicked. Opening file input.');
+        ui.fileInput?.click();
+    });
     ui.fileInput?.addEventListener('change', (e: any) => {
+        logToScreen('File selected from gallery.');
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
@@ -166,7 +190,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                         ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(img, x, y, size, size, 0, 0, 229, 229);
                     }
-                    
+                    logToScreen('Processing image from gallery.');
                     processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.src = e.target?.result as string;
@@ -176,6 +200,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     });
 
     ui.retakeBtn?.addEventListener('click', () => {
+        logToScreen('Retake button clicked. Resetting camera and state.');
         ui.video.classList.remove('hidden');
         ui.photo.classList.add('hidden');
         ui.captureBtn?.classList.remove('hidden');
@@ -189,11 +214,16 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     });
 
     ui.checkInBtn?.addEventListener('click', async () => {
-        if (!state.targetLocation || !state.capturedPhoto || !ui.checkInStatus || !state.token) return;
+        logToScreen('Check-in/out button clicked.');
+        if (!state.targetLocation || !state.capturedPhoto || !ui.checkInStatus || !state.token) {
+            logToScreen('Check-in/out prerequisites not met. Aborting.');
+            return;
+        }
         ui.checkInBtn.disabled = true;
         ui.checkInBtn.textContent = 'Mengirim...';
         ui.checkInStatus.classList.remove('hidden');
         ui.checkInStatus.className = 'status-message info-text';
+        logToScreen('Preparing payload for submission.');
 
         const offset = getRandomOffset(20, state.targetLocation.latitude);
         const payload = {
@@ -205,17 +235,14 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             is_mock_location: false,
             location_accuracy: 8.5 + Math.random() * 1.5
         };
+        logToScreen('Payload prepared.');
 
-        console.log('--- Attendance Payload ---');
-        console.log('Full Payload:', payload);
-        console.log('Face Embedding:', payload.face_embedding);
-        console.log('Type:', state.isCheckingOut ? 'Check-Out' : 'Check-In');
-        console.log('------------------------');
-
+        logToScreen('Submitting check-in/out...');
         const result = state.isCheckingOut 
             ? await submitCheckOut(state.token, payload)
             : await submitCheckIn(state.token, payload);
         
+        logToScreen('API call result: ' + (result.ok ? 'Success' : 'Failure') + ' (Status: ' + result.status + ')');
         ui.checkInStatus.innerHTML = result.ok 
             ? `<strong>✅ ${state.isCheckingOut ? 'Check-Out' : 'Absensi'} Berhasil Disimpan</strong>` 
             : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
@@ -227,13 +254,16 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         if (jsonContainer && jsonPre) {
             jsonPre.textContent = JSON.stringify(result.data || { error: 'No data returned' }, null, 2);
             jsonContainer.classList.remove('hidden');
+            logToScreen('Displaying API response.');
         }
 
         if (!result.ok) {
             ui.checkInBtn.disabled = false;
             ui.checkInBtn.textContent = 'Coba Lagi';
+            logToScreen('Submission failed, enabling retry.');
         } else {
             ui.checkInBtn.textContent = 'Selesai';
+            logToScreen('Submission successful.');
         }
     });
 
@@ -247,10 +277,12 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 btn.textContent = 'COPIED!';
                 setTimeout(() => btn.textContent = originalText, 2000);
             }
+            logToScreen('JSON response copied to clipboard.');
         }
     });
 
     ui.retakeBtn?.addEventListener('click', () => {
+        logToScreen('Retake button clicked. Resetting camera and state.');
         ui.video.classList.remove('hidden');
         ui.photo.classList.add('hidden');
         ui.captureBtn?.classList.remove('hidden');
@@ -263,11 +295,12 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
         const jsonContainer = document.getElementById('jsonResponseContainer');
         if (jsonContainer) jsonContainer.classList.add('hidden');
+        logToScreen('UI reset for new capture.');
     });
 
     let isAutoCapturing = false;
     let isDetecting = false;
-    const HOLD_DURATION = 500;
+    const HOLD_DURATION = 500; // This variable is not used, but kept as per original code.
     let smoothedScore = 0;
 
     async function updateFaceDetection() {
@@ -302,6 +335,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
                     // Auto capture only when visual score reaches 70%
                     if (displayScore >= 70 && !isAutoCapturing) {
+                        logToScreen(`Face detected with score ${displayScore}%. Initiating auto-capture.`);
                         isAutoCapturing = true;
                         ui.livenessUI?.classList.remove('hidden');
                         if (ui.livenessInstruction) {
@@ -331,8 +365,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             if (ui.faceMatchProgress) {
                 ui.faceMatchProgress.style.width = detection ? `${Math.round(smoothedScore)}%` : '15%';
             }
-        } catch (e) {
-            console.error('Face detection error:', e);
+        } catch (e: any) {
+            logToScreen(`Face detection error: ${e.message}`);
         } finally {
             isDetecting = false;
             setTimeout(updateFaceDetection, 100);
@@ -340,16 +374,123 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     }
 
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        logToScreen('Logout button clicked. Clearing local storage and redirecting.');
         localStorage.clear();
         window.location.href = '/login';
     });
 
     (async () => {
+        // PRIORITY 1: Setup UI & Data Fetching
+        logToScreen('Starting Dashboard Initialization...');
+
+        // 1. Setup User Profile
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) {
+            const fullName = localStorage.getItem('full_name');
+            userNameEl.textContent = fullName ? fullName.trim() : 'Pegawai Kinerja';
+            logToScreen(`Set user name: ${userNameEl.textContent}`);
+        }
+
+        const photoPath = localStorage.getItem('photo_path');
+        if (photoPath) {
+            const userPhoto = document.getElementById('userPhoto') as HTMLImageElement;
+            const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
+            if (userPhoto && userPhotoPlaceholder) {
+                userPhoto.src = `https://absensi-kinerja.labuhanbatuselatankab.go.id${photoPath}`;
+                userPhoto.classList.remove('hidden');
+                userPhotoPlaceholder.classList.add('hidden');
+                logToScreen('Set user photo from local storage.');
+            }
+        }
+
+        // 2. Fetch Attendance Info
+        try {
+            logToScreen('Fetching attendance data from /api/attendance-today...');
+            const attendRes = await fetch('/api/attendance-today', {
+                headers: { 'Authorization': `Bearer ${state.token}` }
+            });
+            
+            if (attendRes.ok) {
+                const attendData = await attendRes.json();
+                logToScreen(`Attendance Data Received: ${JSON.stringify(attendData).substring(0, 100)}...`);
+
+                if (attendData) {
+                    const baseUrl = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
+                    
+                    // Update Clock In
+                    if (attendData.clock_in) {
+                        logToScreen(`Processing Clock In: ${attendData.clock_in}`);
+                        const inTimeEl = document.getElementById('clockInTime');
+                        const inPhotoEl = document.getElementById('clockInPhoto') as HTMLImageElement;
+                        const inPhotoPlaceholder = document.getElementById('clockInPhotoPlaceholder');
+                        
+                        if (inTimeEl) {
+                            inTimeEl.textContent = new Date(attendData.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            logToScreen(`Updated clock in time: ${inTimeEl.textContent}`);
+                        }
+                        if (attendData.in_photo && inPhotoEl && inPhotoPlaceholder) {
+                            inPhotoEl.src = `${baseUrl}${attendData.in_photo}`;
+                            inPhotoEl.classList.remove('hidden');
+                            inPhotoPlaceholder.classList.add('hidden');
+                            logToScreen('Updated clock in photo.');
+                        }
+                    } else {
+                        logToScreen('No clock_in data found for today.');
+                    }
+
+                    // Update Clock Out
+                    if (attendData.clock_out) {
+                        logToScreen(`Processing Clock Out: ${attendData.clock_out}`);
+                        const outTimeEl = document.getElementById('clockOutTime');
+                        const outPhotoEl = document.getElementById('clockOutPhoto') as HTMLImageElement;
+                        const outPhotoPlaceholder = document.getElementById('clockOutPhotoPlaceholder');
+                        
+                        if (outTimeEl) {
+                            outTimeEl.textContent = new Date(attendData.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            logToScreen(`Updated clock out time: ${outTimeEl.textContent}`);
+                        }
+                        if (attendData.out_photo && outPhotoEl && outPhotoPlaceholder) {
+                            outPhotoEl.src = `${baseUrl}${attendData.out_photo}`;
+                            outPhotoEl.classList.remove('hidden');
+                            outPhotoPlaceholder.classList.add('hidden');
+                            logToScreen('Updated clock out photo.');
+                        }
+                    } else {
+                        logToScreen('No clock_out data found for today.');
+                    }
+                    
+                    // Decide if next action is check-out
+                    if (attendData.clock_in && !attendData.clock_out) {
+                        state.isCheckingOut = true;
+                        ui.checkInBtn.textContent = 'Kirim Check-Out';
+                        ui.checkInBtn.classList.replace('bg-indigo-600', 'bg-rose-600');
+                        logToScreen('User has clocked in, setting state to Check-Out.');
+                    } else if (attendData.clock_in && attendData.clock_out) {
+                        ui.checkInBtn.textContent = 'Sudah Absen Hari Ini';
+                        ui.checkInBtn.disabled = true;
+                        logToScreen('User has clocked in and out, disabling check-in button.');
+                    }
+                }
+            } else {
+                logToScreen(`Attendance fetch failed: ${attendRes.status} ${attendRes.statusText}`);
+            }
+        } catch (e: any) {
+            logToScreen(`Error fetching today attendance: ${e.message}`);
+        }
+
+        // PRIORITY 2: Heavy Tasks (Camera & Location)
+        logToScreen('Initializing camera...');
         initCamera(ui.video);
-        loadFaceModels();
+        logToScreen('Loading face models...');
+        loadFaceModels(); // Async load
+        logToScreen('Starting face detection updates...');
         updateFaceDetection();
+
+        // 3. Fetch Location
+        logToScreen('Fetching target location...');
         const loc = await fetchLocation(state.token || '');
         if (loc) {
+            logToScreen(`Location data received: ${loc.name} (${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)})`);
             state.targetLocation = loc;
             const targetNameEl = document.getElementById('targetName');
             const targetAddressEl = document.getElementById('targetAddress');
@@ -365,75 +506,11 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 statusBadge.textContent = 'Sesuai';
                 statusBadge.classList.add('success');
             }
-            
-            const userNameEl = document.getElementById('userName');
-            if (userNameEl) {
-                const fullName = localStorage.getItem('full_name');
-                userNameEl.textContent = fullName ? fullName.trim() : 'Pegawai Kinerja';
-            }
-
-            const photoPath = localStorage.getItem('photo_path');
-            if (photoPath) {
-                const userPhoto = document.getElementById('userPhoto') as HTMLImageElement;
-                const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
-                if (userPhoto && userPhotoPlaceholder) {
-                    userPhoto.src = `https://absensi-kinerja.labuhanbatuselatankab.go.id${photoPath}`;
-                    userPhoto.classList.remove('hidden');
-                    userPhotoPlaceholder.classList.add('hidden');
-                }
-            }
-
-            // Fetch today's attendance
-            try {
-                const attendRes = await fetch('/api/attendance-today', {
-                    headers: { 'Authorization': `Bearer ${state.token}` }
-                });
-                if (attendRes.ok) {
-                    const attendData = await attendRes.json();
-                    if (attendData && attendData.id) {
-                        const baseUrl = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
-                        
-                        // Update Clock In
-                        if (attendData.clock_in) {
-                            const inTimeEl = document.getElementById('clockInTime');
-                            const inPhotoEl = document.getElementById('clockInPhoto') as HTMLImageElement;
-                            const inPhotoPlaceholder = document.getElementById('clockInPhotoPlaceholder');
-                            
-                            if (inTimeEl) inTimeEl.textContent = new Date(attendData.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                            if (attendData.in_photo && inPhotoEl && inPhotoPlaceholder) {
-                                inPhotoEl.src = `${baseUrl}${attendData.in_photo}`;
-                                inPhotoEl.classList.remove('hidden');
-                                inPhotoPlaceholder.classList.add('hidden');
-                            }
-                        }
-
-                        // Update Clock Out
-                        if (attendData.clock_out) {
-                            const outTimeEl = document.getElementById('clockOutTime');
-                            const outPhotoEl = document.getElementById('clockOutPhoto') as HTMLImageElement;
-                            const outPhotoPlaceholder = document.getElementById('clockOutPhotoPlaceholder');
-                            
-                            if (outTimeEl) outTimeEl.textContent = new Date(attendData.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                            if (attendData.out_photo && outPhotoEl && outPhotoPlaceholder) {
-                                outPhotoEl.src = `${baseUrl}${attendData.out_photo}`;
-                                outPhotoEl.classList.remove('hidden');
-                                outPhotoPlaceholder.classList.add('hidden');
-                            }
-                        }
-                        // Decide if next action is check-out
-                        if (attendData.clock_in && !attendData.clock_out) {
-                            state.isCheckingOut = true;
-                            ui.checkInBtn.textContent = 'Kirim Check-Out';
-                            ui.checkInBtn.classList.replace('bg-indigo-600', 'bg-rose-600');
-                        } else if (attendData.clock_in && attendData.clock_out) {
-                            ui.checkInBtn.textContent = 'Sudah Absen Hari Ini';
-                            ui.checkInBtn.disabled = true;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Failed to fetch today attendance:', e);
-            }
+            logToScreen('Location UI updated.');
+        } else {
+            logToScreen('Location data unavailable or fetch failed.');
         }
+        logToScreen('Dashboard Initialization Complete.');
     })();
 </script>
+```

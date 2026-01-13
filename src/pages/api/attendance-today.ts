@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 
-const BASE_URL = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
+import { getTargetUrl, TARGET_BASE_URL } from '../../utils/proxy';
+
 const USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0.1 Mobile/15E148 Safari/604.1';
 
 export const GET: APIRoute = async ({ request }) => {
@@ -13,18 +14,34 @@ export const GET: APIRoute = async ({ request }) => {
             });
         }
 
-        const response = await fetch(`${BASE_URL}/api/v1/attendance/today`, {
+        console.log(`[attendance] Requesting to: ${getTargetUrl('/api/v1/attendance/today')}`);
+        console.log(`[attendance] Auth Header: ${authHeader?.substring(0, 20)}...`);
+
+        const response = await fetch(getTargetUrl('/api/v1/attendance/today'), {
             method: 'GET',
             headers: {
                 'User-Agent': USER_AGENT,
                 'Authorization': authHeader,
                 'Accept': 'application/json, text/plain, */*',
-                'Origin': BASE_URL,
-                'Referer': `${BASE_URL}/dashboard`
-            }
+                'Origin': TARGET_BASE_URL,
+                'Referer': `${TARGET_BASE_URL}/dashboard`,
+                'Accept-Language': 'id-ID,id;q=0.9',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Dest': 'empty'
+            },
         });
 
-        const data = await response.json();
+        console.log(`[attendance] Response Status: ${response.status}`);
+        const text = await response.text();
+        console.log(`[attendance] Response Body Preview: ${text.substring(0, 200)}...`);
+
+        if (!response.ok) {
+            console.error(`[attendance] Error Response: ${text}`);
+            return new Response(text, { status: response.status });
+        }
+
+        const data = JSON.parse(text);
         return new Response(JSON.stringify(data), {
             status: response.status,
             headers: {
@@ -32,6 +49,7 @@ export const GET: APIRoute = async ({ request }) => {
             }
         });
     } catch (error: any) {
+        console.error(`[attendance] Exception:`, error);
         return new Response(JSON.stringify({ detail: error.message }), {
             status: 500,
             headers: {

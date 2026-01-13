@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 
-const BASE_URL = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
+import { getTargetUrl, TARGET_BASE_URL } from '../../utils/proxy';
+
 const USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0.1 Mobile/15E148 Safari/604.1';
 
 export const POST: APIRoute = async ({ request }) => {
@@ -13,20 +14,32 @@ export const POST: APIRoute = async ({ request }) => {
             });
         }
 
-        const response = await fetch(`${BASE_URL}/api/v1/auth/test-token`, {
+        console.log(`[test-token] Requesting to: ${getTargetUrl('/api/v1/auth/test-token')}`);
+        console.log(`[test-token] Auth Header: ${authHeader?.substring(0, 20)}...`);
+
+        const response = await fetch(getTargetUrl('/api/v1/auth/test-token'), {
             method: 'POST',
             headers: {
                 'User-Agent': USER_AGENT,
                 'Authorization': authHeader,
                 'Accept': 'application/json, text/plain, */*',
                 'Content-Type': 'application/json',
-                'Origin': BASE_URL,
-                'Referer': `${BASE_URL}/login`
+                'Origin': TARGET_BASE_URL,
+                'Referer': `${TARGET_BASE_URL}/login`
             },
             body: JSON.stringify({})
         });
 
-        const data = await response.json();
+        console.log(`[test-token] Response Status: ${response.status}`);
+        const text = await response.text();
+        console.log(`[test-token] Response Body Preview: ${text.substring(0, 200)}...`);
+
+        if (!response.ok) {
+            console.error(`[test-token] Error Response: ${text}`);
+            return new Response(text, { status: response.status });
+        }
+
+        const data = JSON.parse(text);
         return new Response(JSON.stringify(data), {
             status: response.status,
             headers: {
@@ -34,6 +47,7 @@ export const POST: APIRoute = async ({ request }) => {
             }
         });
     } catch (error: any) {
+        console.error(`[test-token] Exception:`, error);
         return new Response(JSON.stringify({ detail: error.message }), {
             status: 500,
             headers: {

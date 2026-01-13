@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getTargetUrl, TARGET_BASE_URL } from '../../utils/proxy';
 
-const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
+const USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0.1 Mobile/15E148 Safari/604.1';
 
 export const POST: APIRoute = async ({ request }) => {
     try {
@@ -20,10 +20,7 @@ export const POST: APIRoute = async ({ request }) => {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json, text/plain, */*',
                 'Origin': TARGET_BASE_URL,
-                'Referer': `${TARGET_BASE_URL}/absensi`,
-                'sec-ch-ua-platform': '"Android"',
-                'sec-ch-ua-mobile': '?1',
-                'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"'
+                'Referer': `${TARGET_BASE_URL}/absensi`
             },
             body: JSON.stringify(body),
         });
