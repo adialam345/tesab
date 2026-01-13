@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
+import { getTargetUrl, TARGET_BASE_URL } from '../../utils/proxy';
 
-const BASE_URL = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
 const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
 
 const ALLOWED_NIPS = [
@@ -23,7 +23,14 @@ const ALLOWED_NIPS = [
     '198912112022032006',
     '197710282007012002',
     '198506052024212035',
-    '197107031993032002'
+    '197107031993032002',
+    '199401232022032005',
+    '199510302022032008',
+    '199609132022032015',
+    '199303052022032007',
+    '199804042022032011',
+    '198302232025212038',
+    '196912111991032003'
 ];
 
 export const POST: APIRoute = async ({ request }) => {
@@ -41,12 +48,12 @@ export const POST: APIRoute = async ({ request }) => {
             });
         }
 
-        const response = await fetch(`${BASE_URL}/api/v1/auth/login/access-token`, {
+        const response = await fetch(getTargetUrl('/api/v1/auth/login/access-token'), {
             method: 'POST',
             headers: {
                 'User-Agent': USER_AGENT,
-                'Origin': BASE_URL,
-                'Referer': `${BASE_URL}/login`,
+                'Origin': TARGET_BASE_URL,
+                'Referer': `${TARGET_BASE_URL}/login`,
                 'Accept': 'application/json, text/plain, */*',
                 'Accept-Language': 'id-ID,id;q=0.9',
                 'sec-ch-ua-platform': '"Android"',

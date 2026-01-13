@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
+import { getTargetUrl, TARGET_BASE_URL } from '../../utils/proxy';
 
-const BASE_URL = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
 const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
 
 export const POST: APIRoute = async ({ request }) => {
@@ -12,15 +12,15 @@ export const POST: APIRoute = async ({ request }) => {
             return new Response(JSON.stringify({ detail: 'Missing Authorization header' }), { status: 401 });
         }
 
-        const response = await fetch(`${BASE_URL}/api/v1/attendance/check-in`, {
+        const response = await fetch(getTargetUrl('/api/v1/attendance/check-in'), {
             method: 'POST',
             headers: {
                 'User-Agent': USER_AGENT,
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json, text/plain, */*',
-                'Origin': BASE_URL,
-                'Referer': `${BASE_URL}/absensi`,
+                'Origin': TARGET_BASE_URL,
+                'Referer': `${TARGET_BASE_URL}/absensi`,
                 'sec-ch-ua-platform': '"Android"',
                 'sec-ch-ua-mobile': '?1',
                 'sec-ch-ua': '"Google Chrome";v="143", "Chromium";v="143", "Not A(Brand";v="24"'
