@@ -53,6 +53,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
     const state = {
         targetLocation: null as any,
+        simulatedLocation: null as { lat: number, lng: number } | null,
         capturedPhoto: null as string | null,
         faceEmbedding: null as number[] | null,
         isCheckingLiveness: false,
@@ -207,16 +208,25 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             console.log('Check-in/out prerequisites not met. Aborting.');
             return;
         }
+
+        let finalLat = state.simulatedLocation?.lat;
+        let finalLng = state.simulatedLocation?.lng;
+
+        if (!finalLat || !finalLng) {
+            const offset = getRandomOffset(20, state.targetLocation.latitude);
+            finalLat = state.targetLocation.latitude + offset.deltaLat;
+            finalLng = state.targetLocation.longitude + offset.deltaLng;
+        }
+
         ui.checkInBtn.disabled = true;
         ui.checkInBtn.textContent = 'Mengirim...';
         ui.checkInStatus.classList.remove('hidden');
         ui.checkInStatus.className = 'status-message info-text';
         console.log('Preparing payload for submission.');
 
-        const offset = getRandomOffset(20, state.targetLocation.latitude);
         const payload = {
-            lat: state.targetLocation.latitude + offset.deltaLat,
-            lng: state.targetLocation.longitude + offset.deltaLng,
+            lat: finalLat,
+            lng: finalLng,
             device_id: USER_AGENT,
             photo_base64: state.capturedPhoto,
             face_embedding: state.faceEmbedding,
@@ -480,15 +490,33 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         if (loc) {
             console.log(`Location data received: ${loc.name} (${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)})`);
             state.targetLocation = loc;
+
+            // Calculate Simulated Location
+            const offset = getRandomOffset(20, loc.latitude);
+            state.simulatedLocation = {
+                lat: loc.latitude + offset.deltaLat,
+                lng: loc.longitude + offset.deltaLng
+            };
+
+            // Calculate Approximate Distance
+            const estimatedDistance = Math.sqrt(
+                Math.pow(offset.deltaLat * 111320, 2) + 
+                Math.pow(offset.deltaLng * 111320 * Math.cos(loc.latitude * Math.PI / 180), 2)
+            ).toFixed(1);
+
             const targetNameEl = document.getElementById('targetName');
             const targetAddressEl = document.getElementById('targetAddress');
             const coordsEl = document.getElementById('coords');
+            const userCoordsEl = document.getElementById('userCoords');
+            const userDistanceEl = document.getElementById('userDistance');
             const radiusEl = document.getElementById('radius');
             const statusBadge = document.getElementById('statusBadge');
             
             if (targetNameEl) targetNameEl.textContent = loc.name;
             if (targetAddressEl) targetAddressEl.textContent = loc.address;
             if (coordsEl) coordsEl.textContent = `${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}`;
+            if (userCoordsEl) userCoordsEl.textContent = `${state.simulatedLocation.lat.toFixed(6)}, ${state.simulatedLocation.lng.toFixed(6)}`;
+            if (userDistanceEl) userDistanceEl.textContent = `± ${estimatedDistance} meter`;
             if (radiusEl) radiusEl.textContent = `${loc.radius_meters}m`;
             if (statusBadge) {
                 statusBadge.textContent = 'Sesuai';
