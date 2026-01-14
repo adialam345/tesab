@@ -78,13 +78,25 @@
     
     <div id="checkInStatus" class="p-4 rounded-xl text-xs font-medium text-center animate-in fade-in slide-in-from-bottom-2 hidden"></div>
 
-    <!-- JSON Response Container -->
-    <div id="jsonResponseContainer" class="hidden mt-4 space-y-2">
-        <div class="flex justify-between items-center px-1">
-            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Server Response</span>
-            <button id="copyJsonBtn" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700 transition-colors">Copy JSON</button>
+    <!-- JSON Debug Containers -->
+    <div id="jsonDebugContainer" class="hidden mt-4 space-y-4">
+        <!-- Request Body -->
+        <div class="space-y-2">
+            <div class="flex justify-between items-center px-1">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Request Body</span>
+                <button id="copyRequestBtn" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700 transition-colors">Copy Request</button>
+            </div>
+            <pre id="jsonRequest" class="p-4 bg-slate-100 rounded-2xl text-[10px] text-slate-600 font-mono overflow-x-auto border border-slate-200 shadow-inner scrollbar-hide max-h-48"></pre>
         </div>
-        <pre id="jsonResponse" class="p-4 bg-slate-900 rounded-2xl text-[10px] text-emerald-400 font-mono overflow-x-auto border border-slate-800 shadow-inner scrollbar-hide max-h-48"></pre>
+
+        <!-- Server Response -->
+        <div class="space-y-2">
+            <div class="flex justify-between items-center px-1">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Server Response</span>
+                <button id="copyJsonBtn" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700 transition-colors">Copy Response</button>
+            </div>
+            <pre id="jsonResponse" class="p-4 bg-slate-900 rounded-2xl text-[10px] text-emerald-400 font-mono overflow-x-auto border border-slate-800 shadow-inner scrollbar-hide max-h-48"></pre>
+        </div>
     </div>
 </div>
 

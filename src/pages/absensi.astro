@@ -246,13 +246,22 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
         ui.checkInStatus.className = `status-message mt-4 ${result.ok ? 'success-text' : 'error-text'}`;
         
-        // Show Raw JSON Response
-        const jsonContainer = document.getElementById('jsonResponseContainer');
-        const jsonPre = document.getElementById('jsonResponse');
-        if (jsonContainer && jsonPre) {
-            jsonPre.textContent = JSON.stringify(result.data || { error: 'No data returned' }, null, 2);
-            jsonContainer.classList.remove('hidden');
-            console.log('Displaying API response.');
+        // Show Raw JSON (Request & Response)
+        const debugContainer = document.getElementById('jsonDebugContainer');
+        const jsonRequestPre = document.getElementById('jsonRequest');
+        const jsonResponsePre = document.getElementById('jsonResponse');
+        
+        if (debugContainer) {
+            if (jsonRequestPre) {
+                // Remove photo_base64 from display if it's too long, or just show its existence
+                const displayPayload = { ...payload, photo_base64: payload.photo_base64.substring(0, 50) + '...' };
+                jsonRequestPre.textContent = JSON.stringify(displayPayload, null, 2);
+            }
+            if (jsonResponsePre) {
+                jsonResponsePre.textContent = JSON.stringify(result.data || { error: 'No data returned' }, null, 2);
+            }
+            debugContainer.classList.remove('hidden');
+            console.log('Displaying debug JSON views.');
         }
 
         if (!result.ok) {
@@ -262,6 +271,20 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         } else {
             ui.checkInBtn.textContent = 'Selesai';
             console.log('Submission successful.');
+        }
+    });
+
+    document.getElementById('copyRequestBtn')?.addEventListener('click', () => {
+        const jsonPre = document.getElementById('jsonRequest');
+        if (jsonPre) {
+            navigator.clipboard.writeText(jsonPre.textContent || '');
+            const btn = document.getElementById('copyRequestBtn');
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'COPIED!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            }
+            console.log('JSON request copied to clipboard.');
         }
     });
 
@@ -291,8 +314,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         isAutoCapturing = false;
         ui.checkInBtn.disabled = true;
         if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
-        const jsonContainer = document.getElementById('jsonResponseContainer');
-        if (jsonContainer) jsonContainer.classList.add('hidden');
+        const debugContainer = document.getElementById('jsonDebugContainer');
+        if (debugContainer) debugContainer.classList.add('hidden');
         console.log('UI reset for new capture.');
     });
 
