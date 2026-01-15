@@ -42,6 +42,7 @@ const ALLOWED_NIPS = [
     '198705302017042008',
     '198711062010012023',
     '198809012019032011',
+    '199810312025212058',
 ];
 
 export const POST: APIRoute = async ({ request }) => {
