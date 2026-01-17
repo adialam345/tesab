@@ -1,6 +1,8 @@
 import { CapacitorHttp } from '@capacitor/core';
 
-// Helper deteksi APK
+const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Mobile Safari/537.36';
+const REFERER = 'https://absensi-kinerja.labuhanbatuselatankab.go.id/absensi';
+
 const isNative = () => {
     return (window as any).Capacitor && (window as any).Capacitor.isNativePlatform();
 };
@@ -8,8 +10,6 @@ const isNative = () => {
 export async function secureFetch(url: string, options: any = {}) {
     if (isNative()) {
         try {
-            console.log('[Native] Requesting:', url);
-
             let bodyData = options.body;
             if (options.body instanceof FormData) {
                 bodyData = {};
@@ -22,16 +22,26 @@ export async function secureFetch(url: string, options: any = {}) {
                 url: url,
                 method: options.method || 'GET',
                 headers: {
+                    'User-Agent': USER_AGENT,
+                    'Referer': REFERER,
+                    'Accept': 'application/json, text/plain, */*',
                     ...options.headers,
-                    'Content-Type': options.body instanceof FormData ? 'application/x-www-form-urlencoded' : 'application/json'
+                    'Content-Type': options.body instanceof FormData ? 'application/x-www-form-urlencoded' : (options.headers['Content-Type'] || 'application/json')
                 },
                 data: bodyData,
                 connectTimeout: 15000,
                 readTimeout: 15000
             });
 
+            // Tampilkan Alert jika status bukan 2xx (Eror dari Server)
             if (response.status < 200 || response.status >= 300) {
-                console.error('[Native Error Response]', response);
+                const errorDetail = `
+⚠️ SERVER ERROR (${response.status})
+URL: ${url}
+Respon: ${typeof response.data === 'object' ? JSON.stringify(response.data) : response.data}
+                `;
+                console.error('[Server Error Detail]', errorDetail);
+                alert(errorDetail);
             }
 
             return {
@@ -41,18 +51,14 @@ export async function secureFetch(url: string, options: any = {}) {
                 text: async () => JSON.stringify(response.data)
             };
         } catch (error: any) {
-            // Menampilkan detail error yang sangat mendalam
-            const errorMsg = `
-🚫 DETAIL ERROR KONEKSI:
------------------------
-Target: ${url}
-Pesan: ${error.message || 'Tidak ada pesan'}
-Kode Error: ${error.code || 'N/A'}
+            // Tampilkan Alert jika Eror Koneksi (HP tidak bisa hubungi Server)
+            const connError = `
+🚫 KONEKSI GAGAL
+URL: ${url}
+Pesan: ${error.message}
 Detail: ${JSON.stringify(error)}
-
-Saran: Periksa sinyal internet atau apakah server sedang down.
             `;
-            alert(errorMsg);
+            alert(connError);
             throw error;
         }
     }
