@@ -19,32 +19,6 @@ export default defineConfig({
     integrations: [
         AstroPWA({
             registerType: 'autoUpdate',
-            manifest: {
-                name: 'AbsenTech',
-                short_name: 'AbsenTech',
-                description: 'Aplikasi Absensi Pintar dengan IP User Asli',
-                start_url: '/',
-                display: 'standalone',
-                background_color: '#ffffff',
-                theme_color: '#4f46e5',
-                icons: [
-                    {
-                        src: '/icon-192.png',
-                        sizes: '192x192',
-                        type: 'image/png',
-                        purpose: 'any'
-                    },
-                    {
-                        src: '/icon-512.png',
-                        sizes: '512x512',
-                        type: 'image/png',
-                        purpose: 'any'
-                    }
-                ]
-
-
-
-            },
             workbox: {
                 navigateFallback: '/',
                 globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,gif,webp,woff,woff2,ttf,eot}'],
@@ -55,6 +29,7 @@ export default defineConfig({
             }
         })
     ],
+
 
     vite: {
         plugins: [tailwindcss()]
