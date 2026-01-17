@@ -17,10 +17,12 @@ export function getRandomOffset(radiusMeters: number, latitude: number) {
 // Fetch location from API
 export async function fetchLocation(token: string) {
     try {
-        console.log('[fetchLocation] Fetching location data direct...');
-        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/last`, {
+        console.log('[fetchLocation] Fetching location with token starting with:', token.substring(0, 10));
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/opd/locations/my`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token.trim()}`,
+                'Accept': 'application/json',
+                'Referer': `${TARGET_BASE_URL}/absensi`
             }
         });
         if (!response.ok) {
@@ -30,6 +32,11 @@ export async function fetchLocation(token: string) {
         }
 
         const data = await response.json();
+        // Karena response berupa array, kita ambil lokasi pertama (index 0)
+        if (Array.isArray(data) && data.length > 0) {
+            console.log('[fetchLocation] Found', data.length, 'locations, picking the first one.');
+            return data[0];
+        }
         return data;
     } catch (error) {
         console.error("Error fetching location:", error);

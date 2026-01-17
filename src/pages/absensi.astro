@@ -431,11 +431,22 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         // 2. Fetch Attendance Info
         try {
             console.log('Fetching attendance data direct from target (secure)...');
+            const trimmedToken = state.token.trim();
             const attendRes = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/today`, {
-                headers: { 'Authorization': `Bearer ${state.token}` }
+                headers: { 
+                    'Authorization': `Bearer ${trimmedToken}`,
+                    'Accept': 'application/json',
+                    'Referer': `${TARGET_BASE_URL}/absensi`
+                }
             });
+
             
+            if (!attendRes.ok) {
+                alert(`Gagal mengambil data absen hari ini. Status: ${attendRes.status}`);
+            }
+
             if (attendRes.ok) {
+
 
                 const attendData = await attendRes.json();
                 console.log(`Attendance Data Received: ${JSON.stringify(attendData).substring(0, 100)}...`);
