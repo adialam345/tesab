@@ -500,8 +500,10 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 console.log(`Attendance fetch failed: ${attendRes.status} ${attendRes.statusText}`);
             }
         } catch (e: any) {
+            alert('Gagal mengambil Informasi Absen: ' + e.message);
             console.error(`Error fetching today attendance: ${e.message}`);
         }
+
 
         // PRIORITY 2: Heavy Tasks (Camera & Location)
         console.log('Initializing camera...');
@@ -551,8 +553,10 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             }
             console.log('Location UI updated.');
         } else {
+            alert('Gagal mengambil Lokasi Kantor. Pastikan GPS HP hidup dan internet lancar.');
             console.log('Location data unavailable or fetch failed.');
         }
+
         console.log('Dashboard Initialization Complete.');
     })();
 </script>

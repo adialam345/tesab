@@ -24,9 +24,11 @@ export async function fetchLocation(token: string) {
             }
         });
         if (!response.ok) {
-            console.error(`[fetchLocation] Error: ${response.status}`);
+            const errBody = await response.text();
+            console.error(`[fetchLocation] FAILED: Status ${response.status} - ${errBody}`);
             return null;
         }
+
         const data = await response.json();
         return data;
     } catch (error) {

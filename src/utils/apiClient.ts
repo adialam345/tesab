@@ -8,7 +8,7 @@ const isNative = () => {
 export async function secureFetch(url: string, options: any = {}) {
     if (isNative()) {
         try {
-            console.log('[Native] Request to:', url);
+            console.log('[Native] Requesting:', url);
 
             let bodyData = options.body;
             if (options.body instanceof FormData) {
@@ -26,11 +26,13 @@ export async function secureFetch(url: string, options: any = {}) {
                     'Content-Type': options.body instanceof FormData ? 'application/x-www-form-urlencoded' : 'application/json'
                 },
                 data: bodyData,
-                connectTimeout: 10000, // 10 detik timeout
-                readTimeout: 10000
+                connectTimeout: 15000,
+                readTimeout: 15000
             });
 
-            console.log('[Native] Response status:', response.status);
+            if (response.status < 200 || response.status >= 300) {
+                console.error('[Native Error Response]', response);
+            }
 
             return {
                 ok: response.status >= 200 && response.status < 300,
@@ -38,9 +40,19 @@ export async function secureFetch(url: string, options: any = {}) {
                 json: async () => response.data,
                 text: async () => JSON.stringify(response.data)
             };
-        } catch (error) {
-            alert('Native Request Error: ' + JSON.stringify(error));
-            console.error('[Native Error]', error);
+        } catch (error: any) {
+            // Menampilkan detail error yang sangat mendalam
+            const errorMsg = `
+🚫 DETAIL ERROR KONEKSI:
+-----------------------
+Target: ${url}
+Pesan: ${error.message || 'Tidak ada pesan'}
+Kode Error: ${error.code || 'N/A'}
+Detail: ${JSON.stringify(error)}
+
+Saran: Periksa sinyal internet atau apakah server sedang down.
+            `;
+            alert(errorMsg);
             throw error;
         }
     }
