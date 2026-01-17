@@ -7,19 +7,17 @@ const isNative = () => {
 
 export async function secureFetch(url: string, options: any = {}) {
     if (isNative()) {
-        console.log('[Native] Bypassing CORS for:', url);
-
-        // Konversi FormData ke Object jika ada (CapacitorHttp butuh Object)
-        let bodyData = options.body;
-        if (options.body instanceof FormData) {
-            bodyData = {};
-            options.body.forEach((value: any, key: any) => {
-                (bodyData as any)[key] = value;
-            });
-        }
-
-
         try {
+            console.log('[Native] Request to:', url);
+
+            let bodyData = options.body;
+            if (options.body instanceof FormData) {
+                bodyData = {};
+                options.body.forEach((value: any, key: any) => {
+                    (bodyData as any)[key] = value;
+                });
+            }
+
             const response = await CapacitorHttp.request({
                 url: url,
                 method: options.method || 'GET',
@@ -27,8 +25,12 @@ export async function secureFetch(url: string, options: any = {}) {
                     ...options.headers,
                     'Content-Type': options.body instanceof FormData ? 'application/x-www-form-urlencoded' : 'application/json'
                 },
-                data: bodyData
+                data: bodyData,
+                connectTimeout: 10000, // 10 detik timeout
+                readTimeout: 10000
             });
+
+            console.log('[Native] Response status:', response.status);
 
             return {
                 ok: response.status >= 200 && response.status < 300,
@@ -37,11 +39,11 @@ export async function secureFetch(url: string, options: any = {}) {
                 text: async () => JSON.stringify(response.data)
             };
         } catch (error) {
+            alert('Native Request Error: ' + JSON.stringify(error));
             console.error('[Native Error]', error);
             throw error;
         }
     }
 
-    // Jika di browser biasa, pakai fetch standar (Akan kena CORS kecuali pakai ekstensi)
     return fetch(url, options);
 }
