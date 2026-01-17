@@ -1,23 +1,35 @@
 import { CapacitorHttp } from '@capacitor/core';
 
-// Helper untuk deteksi apakah sedang di dalam APK
+// Helper deteksi APK
 const isNative = () => {
     return (window as any).Capacitor && (window as any).Capacitor.isNativePlatform();
 };
 
 export async function secureFetch(url: string, options: any = {}) {
     if (isNative()) {
-        console.log('[NativeFetch] Using CapacitorHttp to bypass CORS');
+        console.log('[Native] Bypassing CORS for:', url);
+
+        // Konversi FormData ke Object jika ada (CapacitorHttp butuh Object)
+        let bodyData = options.body;
+        if (options.body instanceof FormData) {
+            bodyData = {};
+            options.body.forEach((value: any, key: any) => {
+                (bodyData as any)[key] = value;
+            });
+        }
+
+
         try {
             const response = await CapacitorHttp.request({
                 url: url,
                 method: options.method || 'GET',
-                headers: options.headers || {},
-                data: options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : undefined,
-                params: options.params || {}
+                headers: {
+                    ...options.headers,
+                    'Content-Type': options.body instanceof FormData ? 'application/x-www-form-urlencoded' : 'application/json'
+                },
+                data: bodyData
             });
 
-            // Convert Capacitor response to fetch-like response
             return {
                 ok: response.status >= 200 && response.status < 300,
                 status: response.status,
@@ -25,11 +37,11 @@ export async function secureFetch(url: string, options: any = {}) {
                 text: async () => JSON.stringify(response.data)
             };
         } catch (error) {
-            console.error('[NativeFetch] Error:', error);
+            console.error('[Native Error]', error);
             throw error;
         }
     }
 
-    // Default to browser fetch
+    // Jika di browser biasa, pakai fetch standar (Akan kena CORS kecuali pakai ekstensi)
     return fetch(url, options);
 }
