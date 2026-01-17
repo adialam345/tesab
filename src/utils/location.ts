@@ -1,4 +1,5 @@
 import { TARGET_BASE_URL } from './constants';
+import { secureFetch } from './apiClient';
 
 // Randomize coordinates within a radius
 export function getRandomOffset(radiusMeters: number, latitude: number) {
@@ -17,13 +18,13 @@ export function getRandomOffset(radiusMeters: number, latitude: number) {
 export async function fetchLocation(token: string) {
     try {
         console.log('[fetchLocation] Fetching location data direct...');
-        const response = await fetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/last`, {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/last`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
         if (!response.ok) {
-            console.error(`[fetchLocation] Error: ${response.status} ${response.statusText}`);
+            console.error(`[fetchLocation] Error: ${response.status}`);
             return null;
         }
         const data = await response.json();
@@ -37,7 +38,7 @@ export async function fetchLocation(token: string) {
 // Submit check-in
 export async function submitCheckIn(token: string, payload: any) {
     try {
-        const response = await fetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/check-in`, {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/check-in`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -56,7 +57,7 @@ export async function submitCheckIn(token: string, payload: any) {
 // Submit check-out
 export async function submitCheckOut(token: string, payload: any) {
     try {
-        const response = await fetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/check-out`, {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/check-out`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

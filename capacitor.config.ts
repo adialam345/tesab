@@ -14,7 +14,13 @@ const config: CapacitorConfig = {
     android: {
         allowMixedContent: true,
         captureInput: true
+    },
+    plugins: {
+        CapacitorHttp: {
+            enabled: true
+        }
     }
 };
+
 
 export default config;

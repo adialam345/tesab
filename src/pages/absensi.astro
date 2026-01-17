@@ -49,6 +49,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     import { getRandomOffset, fetchLocation, submitCheckIn, submitCheckOut } from '../utils/location';
     import { updateLivenessProgress } from '../utils/liveness';
     import { TARGET_BASE_URL } from '../utils/constants';
+    import { secureFetch } from '../utils/apiClient';
 
 
     const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
@@ -428,8 +429,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
         // 2. Fetch Attendance Info
         try {
-            console.log('Fetching attendance data direct from target...');
-            const attendRes = await fetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/today`, {
+            console.log('Fetching attendance data direct from target (secure)...');
+            const attendRes = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/today`, {
                 headers: { 'Authorization': `Bearer ${state.token}` }
             });
             
