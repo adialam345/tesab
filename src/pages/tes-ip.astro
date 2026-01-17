@@ -41,7 +41,8 @@ import Layout from '../layouts/Layout.astro';
             </div>
 
             <div class="text-center">
-                <a href="/absensi" class="inline-flex items-center gap-2 text-sm font-black text-slate-400 hover:text-indigo-600 transition-all uppercase tracking-widest group">
+                <a href="absensi.html" class="inline-flex items-center gap-2 text-sm font-black text-slate-400 hover:text-indigo-600 transition-all uppercase tracking-widest group">
+
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     Kembali ke Absensi
                 </a>
@@ -67,10 +68,6 @@ import Layout from '../layouts/Layout.astro';
             const clientRes = await fetch('https://api.ipify.org?format=json');
             const clientData = await clientRes.json();
             
-            // 2. Cek IP dari Sisi VPS (Hanya pembanding)
-            const vpsRes = await fetch('/api/check-ip');
-            const vpsData = await vpsRes.json();
-
             if (resultDiv) resultDiv.classList.remove('hidden');
             
             // Tampilkan IP HP User (Yang akan terdeteksi saat Absen)
@@ -81,13 +78,10 @@ import Layout from '../layouts/Layout.astro';
                             <span class="text-[10px] text-indigo-400 block uppercase mb-1">IP HP ANDA (LANGSUNG)</span>
                             <span class="text-indigo-600 font-black">${clientData.ip}</span>
                         </div>
-                        <div class="p-2 bg-slate-100 rounded-lg border border-slate-200 opacity-60">
-                            <span class="text-[10px] text-slate-400 block uppercase mb-1">IP VPS (PEMBANDING)</span>
-                            <span class="text-slate-500 font-bold">${vpsData.ip_addr}</span>
-                        </div>
                     </div>
                 `;
             }
+
 
             if (ipLoc) ipLoc.textContent = 'Proses absensi sekarang menggunakan jalur "IP HP ANDA" di atas.';
             if (warning) warning.classList.add('hidden');

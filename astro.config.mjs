@@ -6,6 +6,9 @@ import AstroPWA from '@vite-pwa/astro';
 // Mode Statis agar aplikasi bisa berjalan 100% mandiri di dalam APK tanpa VPS
 export default defineConfig({
     output: 'static',
+    build: {
+        format: 'file'
+    },
 
     integrations: [
         AstroPWA({

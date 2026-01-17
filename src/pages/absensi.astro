@@ -400,7 +400,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
         console.log('Logout button clicked. Clearing local storage and redirecting.');
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = 'login.html';
+
     });
 
     (async () => {

@@ -102,7 +102,8 @@ import Layout from '../layouts/Layout.astro';
                 }
 
                 alert('Login Berhasil! Mengalihkan ke Dashboard...');
-                window.location.href = '/absensi/';
+                window.location.href = 'absensi.html';
+
             } else {
                 alert('Login Gagal: ' + (data.detail || 'Periksa NIP Anda'));
                 errorMessage.textContent = data.detail || 'Login gagal. Periksa kembali NIP.';
