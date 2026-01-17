@@ -432,28 +432,20 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         try {
             console.log('Fetching attendance data direct from target (secure)...');
             const trimmedToken = state.token.trim();
-            const attendRes = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/today`, {
+            const attendRes = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/today`, {
                 headers: { 
                     'Authorization': `Bearer ${trimmedToken}`,
                     'Accept': 'application/json',
                     'Referer': `${TARGET_BASE_URL}/absensi`
                 }
             });
-
             
-            if (!attendRes.ok) {
-                alert(`Gagal mengambil data absen hari ini. Status: ${attendRes.status}`);
-            }
-
             if (attendRes.ok) {
-
-
                 const attendData = await attendRes.json();
-                console.log(`Attendance Data Received: ${JSON.stringify(attendData).substring(0, 100)}...`);
+                console.log('Attendance Data Received:', attendData);
 
                 if (attendData) {
                     // Update Clock In
-
                     if (attendData.clock_in) {
                         console.log(`Processing Clock In: ${attendData.clock_in}`);
                         const inTimeEl = document.getElementById('clockInTime');
@@ -506,6 +498,10 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                         ui.checkInBtn.disabled = true;
                         console.log('User has clocked in and out, disabling check-in button.');
                     }
+                } else {
+                    console.log('No attendance record for today yet (null or empty).');
+                    // If no attendance record, the button should remain 'Kirim Absensi' and enabled.
+                    // The rest of the UI setup (camera, location) should still proceed.
                 }
             } else {
                 console.log(`Attendance fetch failed: ${attendRes.status} ${attendRes.statusText}`);
