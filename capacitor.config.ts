@@ -1,14 +1,10 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-
 const config: CapacitorConfig = {
     appId: 'com.absentech.app',
     appName: 'AbsenTech',
-    webDir: 'dist/client',
+    webDir: 'dist', // Mengacu pada hasil build statis Astro
     server: {
-        // Ganti dengan URL VPS Anda agar WebView langsung memuat website tersebut
-        url: 'https://tesab.my.id',
-        cleartext: true,
         androidScheme: 'https'
     },
     android: {
@@ -21,6 +17,5 @@ const config: CapacitorConfig = {
         }
     }
 };
-
 
 export default config;
