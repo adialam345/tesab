@@ -50,6 +50,8 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
+    import { TARGET_BASE_URL } from '../utils/constants';
+
     const loginForm = document.getElementById('loginForm') as HTMLFormElement;
     const submitBtn = document.getElementById('submitBtn');
     const errorMessage = document.getElementById('errorMessage');
@@ -69,7 +71,8 @@ import Layout from '../layouts/Layout.astro';
         const formData = new FormData(loginForm);
         
         try {
-            const response = await fetch('/api/login', {
+            // Direct fetch to target URL for IP preservation
+            const response = await fetch(`${TARGET_BASE_URL}/api/v1/auth/login/access-token`, {
                 method: 'POST',
                 body: formData
             });
@@ -80,9 +83,9 @@ import Layout from '../layouts/Layout.astro';
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('token_type', data.token_type);
                 
-                // Get additional user data
+                // Get additional user data direct to target
                 try {
-                    const profileRes = await fetch('/api/test-token', {
+                    const profileRes = await fetch(`${TARGET_BASE_URL}/api/v1/auth/test-token`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `${data.token_type} ${data.access_token}`
@@ -99,16 +102,11 @@ import Layout from '../layouts/Layout.astro';
 
                 window.location.href = '/absensi';
             } else {
-                if (response.status === 401) {
-                    // Redirect to YouTube if NIP is not whitelisted
-                    window.location.href = 'https://www.youtube.com';
-                    return;
-                }
                 errorMessage.textContent = data.detail || 'Login gagal. Periksa kembali NIP.';
                 errorMessage.classList.remove('hidden');
             }
         } catch (error) {
-            errorMessage.textContent = 'Kesalahan koneksi.';
+            errorMessage.textContent = 'Kesalahan koneksi (Pastikan aplikasi menduukung Cross-Origin).';
             errorMessage.classList.remove('hidden');
         } finally {
             submitBtn.removeAttribute('disabled');
@@ -117,3 +115,4 @@ import Layout from '../layouts/Layout.astro';
         }
     });
 </script>
+

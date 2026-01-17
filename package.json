@@ -6,6 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "cap-sync": "astro build && npx cap sync",
     "astro": "astro"
   },
   "dependencies": {
@@ -15,6 +16,9 @@
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.0.1",
+    "@capacitor/cli": "^8.0.1",
+    "@capacitor/core": "^8.0.1",
     "@vite-pwa/astro": "^1.2.0",
     "vite-plugin-pwa": "^1.2.0"
   }

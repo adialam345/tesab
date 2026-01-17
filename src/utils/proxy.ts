@@ -1,4 +1,7 @@
-export const TARGET_BASE_URL = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
+import { TARGET_BASE_URL } from './constants';
+export { TARGET_BASE_URL };
+
+
 
 // Daftar 16 Cloudflare Workers Anda
 export const CLOUDFLARE_WORKERS: string[] = [];

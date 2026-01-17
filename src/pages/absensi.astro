@@ -48,6 +48,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     import { initCamera, loadFaceModels, extractFaceEmbedding, generateDummyEmbedding } from '../utils/camera';
     import { getRandomOffset, fetchLocation, submitCheckIn, submitCheckOut } from '../utils/location';
     import { updateLivenessProgress } from '../utils/liveness';
+    import { TARGET_BASE_URL } from '../utils/constants';
+
 
     const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
 
@@ -417,7 +419,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             const userPhoto = document.getElementById('userPhoto') as HTMLImageElement;
             const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
             if (userPhoto && userPhotoPlaceholder) {
-                userPhoto.src = `https://absensi-kinerja.labuhanbatuselatankab.go.id${photoPath}`;
+                userPhoto.src = `${TARGET_BASE_URL}${photoPath}`;
                 userPhoto.classList.remove('hidden');
                 userPhotoPlaceholder.classList.add('hidden');
                 console.log('Set user photo from local storage.');
@@ -426,19 +428,19 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
         // 2. Fetch Attendance Info
         try {
-            console.log('Fetching attendance data from /api/attendance-today...');
-            const attendRes = await fetch('/api/attendance-today', {
+            console.log('Fetching attendance data direct from target...');
+            const attendRes = await fetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/today`, {
                 headers: { 'Authorization': `Bearer ${state.token}` }
             });
             
             if (attendRes.ok) {
+
                 const attendData = await attendRes.json();
                 console.log(`Attendance Data Received: ${JSON.stringify(attendData).substring(0, 100)}...`);
 
                 if (attendData) {
-                    const baseUrl = 'https://absensi-kinerja.labuhanbatuselatankab.go.id';
-                    
                     // Update Clock In
+
                     if (attendData.clock_in) {
                         console.log(`Processing Clock In: ${attendData.clock_in}`);
                         const inTimeEl = document.getElementById('clockInTime');
@@ -450,7 +452,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                             console.log(`Updated clock in time: ${inTimeEl.textContent}`);
                         }
                         if (attendData.in_photo && inPhotoEl && inPhotoPlaceholder) {
-                            inPhotoEl.src = `${baseUrl}${attendData.in_photo}`;
+                            inPhotoEl.src = `${TARGET_BASE_URL}${attendData.in_photo}`;
                             inPhotoEl.classList.remove('hidden');
                             inPhotoPlaceholder.classList.add('hidden');
                             console.log('Updated clock in photo.');
@@ -471,7 +473,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                             console.log(`Updated clock out time: ${outTimeEl.textContent}`);
                         }
                         if (attendData.out_photo && outPhotoEl && outPhotoPlaceholder) {
-                            outPhotoEl.src = `${baseUrl}${attendData.out_photo}`;
+                            outPhotoEl.src = `${TARGET_BASE_URL}${attendData.out_photo}`;
                             outPhotoEl.classList.remove('hidden');
                             outPhotoPlaceholder.classList.add('hidden');
                             console.log('Updated clock out photo.');
