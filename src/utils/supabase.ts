@@ -49,5 +49,19 @@ export const nipService = {
         return supabaseRequest(`allowed_nips?nip=eq.${nip}`, {
             method: 'DELETE'
         });
+    },
+
+    async getSettings() {
+        try {
+            const data = await supabaseRequest('app_settings?select=key,value');
+            const settings: any = {};
+            data.forEach((item: any) => {
+                settings[item.key] = item.value;
+            });
+            return settings;
+        } catch (e) {
+            console.error('Failed to fetch settings:', e);
+            return null;
+        }
     }
 };
