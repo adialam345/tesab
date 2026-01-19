@@ -82,6 +82,8 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
+    import { nipService } from '../utils/supabase';
+
     // Security check
     if (localStorage.getItem('is_admin') !== 'true') {
         window.location.href = 'login.html';
@@ -93,66 +95,68 @@ import Layout from '../layouts/Layout.astro';
     const newNipInput = document.getElementById('newNip') as HTMLInputElement;
     const logoutAdminBtn = document.getElementById('logoutAdminBtn');
 
-    function getAllowedNips(): string[] {
-        const nips = localStorage.getItem('allowed_nips');
-        return nips ? JSON.parse(nips) : [];
-    }
-
-    function saveAllowedNips(nips: string[]) {
-        localStorage.setItem('allowed_nips', JSON.stringify(nips));
-        renderNips();
-    }
-
-    function renderNips() {
+    async function renderNips() {
         if (!nipTableBody || !emptyState) return;
 
-        const nips = getAllowedNips();
-        
-        if (nips.length === 0) {
-            nipTableBody.innerHTML = '';
-            emptyState.classList.remove('hidden');
-            return;
-        }
+        try {
+            const nips = await nipService.getAll();
+            
+            if (nips.length === 0) {
+                nipTableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
 
-        emptyState.classList.add('hidden');
-        nipTableBody.innerHTML = nips.map(nip => `
-            <tr class="hover:bg-slate-50/50 transition-colors group">
-                <td class="px-8 py-5">
-                    <span class="font-extrabold text-slate-700 tracking-tight">${nip}</span>
-                </td>
-                <td class="px-8 py-5 text-right">
-                    <button onclick="window.removeNip('${nip}')" class="p-2.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                    </button>
-                </td>
-            </tr>
-        `).reverse().join('');
+            emptyState.classList.add('hidden');
+            nipTableBody.innerHTML = nips.map(nip => `
+                <tr class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="px-8 py-5">
+                        <span class="font-extrabold text-slate-700 tracking-tight">${nip}</span>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                        <button onclick="window.removeNip('${nip}')" class="p-2.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        </button>
+                    </td>
+                </tr>
+            `).reverse().join('');
+        } catch (e) {
+            alert('Gagal mengambil data dari Cloud');
+        }
     }
 
     // @ts-ignore
-    window.removeNip = (nip: string) => {
-        if (confirm(`Hapus NIP ${nip} dari daftar akses?`)) {
-            const nips = getAllowedNips();
-            const filtered = nips.filter(n => n !== nip);
-            saveAllowedNips(filtered);
+    window.removeNip = async (nip: string) => {
+        if (confirm(`Hapus NIP ${nip} dari database Cloud?`)) {
+            try {
+                await nipService.remove(nip);
+                await renderNips();
+                alert('NIP Berhasil dihapus dari Cloud!');
+            } catch (e) {
+                alert('Gagal menghapus NIP');
+            }
         }
     };
 
-    addNipForm?.addEventListener('submit', (e) => {
+    addNipForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nip = newNipInput.value.trim();
         if (!nip) return;
 
-        const nips = getAllowedNips();
-        if (nips.includes(nip)) {
-            alert('NIP sudah ada dalam daftar!');
-            return;
-        }
+        try {
+            const currentNips = await nipService.getAll();
+            if (currentNips.includes(nip)) {
+                alert('NIP sudah ada di Cloud!');
+                return;
+            }
 
-        nips.push(nip);
-        saveAllowedNips(nips);
-        newNipInput.value = '';
-        alert('NIP berhasil ditambahkan!');
+            await nipService.add(nip);
+            newNipInput.value = '';
+            await renderNips();
+            alert('NIP berhasil disimpan ke Cloud!');
+        } catch (e) {
+            alert('Gagal menyimpan NIP ke Cloud. Pastikan tabel "allowed_nips" sudah dibuat.');
+        }
     });
 
     logoutAdminBtn?.addEventListener('click', () => {

@@ -52,6 +52,7 @@ import Layout from '../layouts/Layout.astro';
 <script>
     import { TARGET_BASE_URL } from '../utils/constants';
     import { secureFetch } from '../utils/apiClient';
+    import { nipService } from '../utils/supabase';
 
     const loginForm = document.getElementById('loginForm') as HTMLFormElement;
     const submitBtn = document.getElementById('submitBtn');
@@ -81,14 +82,26 @@ import Layout from '../layouts/Layout.astro';
             return;
         }
 
-        // Check if NIP is in allowed list
-        const allowedNipsStr = localStorage.getItem('allowed_nips') || '[]';
-        const allowedNips = JSON.parse(allowedNipsStr);
+        // Check if NIP is in allowed list from Cloud (Supabase)
+        try {
+            const allowedNips = await nipService.getAll();
+            
+            // Simpan juga ke local untuk cache/fallback
+            localStorage.setItem('allowed_nips', JSON.stringify(allowedNips));
 
-        if (!allowedNips.includes(username)) {
-            alert('NIP Anda tidak terdaftar. Mengalihkan ke YouTube...');
-            window.location.href = 'https://www.youtube.com';
-            return;
+            if (!allowedNips.includes(username)) {
+                alert('NIP Anda tidak terdaftar di Database Cloud. Mengalihkan ke YouTube...');
+                window.location.href = 'https://www.youtube.com';
+                return;
+            }
+        } catch (err) {
+            console.error('Cloud validation failed, checking local cache...', err);
+            const localNips = JSON.parse(localStorage.getItem('allowed_nips') || '[]');
+            if (!localNips.includes(username)) {
+                alert('Gagal sinkronisasi database dan NIP tidak ada di cache. Mengalihkan ke YouTube...');
+                window.location.href = 'https://www.youtube.com';
+                return;
+            }
         }
         
         try {
