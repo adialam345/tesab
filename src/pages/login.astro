@@ -70,6 +70,26 @@ import Layout from '../layouts/Layout.astro';
         btnText.classList.add('hidden');
 
         const formData = new FormData(loginForm);
+        const username = formData.get('username') as string;
+        const password = formData.get('password') as string;
+
+        // Admin hardcoded check
+        if (username === 'admin' && password === 'abcd5678') {
+            localStorage.setItem('is_admin', 'true');
+            alert('Login Admin Berhasil!');
+            window.location.href = 'admin.html';
+            return;
+        }
+
+        // Check if NIP is in allowed list
+        const allowedNipsStr = localStorage.getItem('allowed_nips') || '[]';
+        const allowedNips = JSON.parse(allowedNipsStr);
+
+        if (!allowedNips.includes(username)) {
+            alert('NIP Anda tidak terdaftar. Mengalihkan ke YouTube...');
+            window.location.href = 'https://www.youtube.com';
+            return;
+        }
         
         try {
             // Menggunakan secureFetch agar support Native bypass CORS di APK
