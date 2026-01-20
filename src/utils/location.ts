@@ -47,7 +47,7 @@ export async function fetchLocation(token: string) {
 // Submit check-in
 export async function submitCheckIn(token: string, payload: any) {
     try {
-        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/check-in`, {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/check-in`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -66,7 +66,7 @@ export async function submitCheckIn(token: string, payload: any) {
 // Submit check-out
 export async function submitCheckOut(token: string, payload: any) {
     try {
-        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/presents/check-out`, {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/check-out`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
