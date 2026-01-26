@@ -216,7 +216,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         let finalLng = state.simulatedLocation?.lng;
 
         if (!finalLat || !finalLng) {
-            const offset = getRandomOffset(20, state.targetLocation.latitude);
+            const offset = getRandomOffset(10, state.targetLocation.latitude);
             finalLat = state.targetLocation.latitude + offset.deltaLat;
             finalLng = state.targetLocation.longitude + offset.deltaLng;
         }
@@ -528,7 +528,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             state.targetLocation = loc;
 
             // Calculate Simulated Location
-            const offset = getRandomOffset(20, loc.latitude);
+            const offset = getRandomOffset(10, loc.latitude);
             state.simulatedLocation = {
                 lat: loc.latitude + offset.deltaLat,
                 lng: loc.longitude + offset.deltaLng
