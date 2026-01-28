@@ -3,28 +3,12 @@ import Layout from '../layouts/Layout.astro';
 import LocationStatus from '../components/LocationStatus.astro';
 import CameraPreview from '../components/CameraPreview.astro';
 import AttendanceInfo from '../components/AttendanceInfo.astro';
+import UserHeader from '../components/UserHeader.astro';
 ---
 
 <Layout title="Dashboard Absensi - AbsenTech">
     <div class="min-h-screen bg-slate-50 pb-12">
-        <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm overflow-hidden" id="userPhotoContainer">
-                        <svg id="userPhotoPlaceholder" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        <img id="userPhoto" src="" class="w-full h-full object-cover hidden" alt="Profile" />
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Akses Pegawai</span>
-                        <span class="font-extrabold text-slate-900 text-sm" id="userName">Verifikasi Akun...</span>
-                    </div>
-                </div>
-                <button id="logoutBtn" class="flex items-center gap-2 bg-rose-50 text-rose-600 border border-rose-100 py-2.5 px-4 rounded-xl text-xs font-bold transition-all hover:bg-rose-100 active:scale-95">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                    <span class="hidden sm:inline">Keluar</span>
-                </button>
-            </div>
-        </header>
+        <UserHeader />
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-6">
             <div class="animate-fade-in">
@@ -45,12 +29,13 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 </Layout>
 
 <script>
-    import { initCamera, loadFaceModels, extractFaceEmbedding, generateDummyEmbedding } from '../utils/camera';
-    import { getRandomOffset, fetchLocation, submitCheckIn, submitCheckOut, submitBreakIn, submitBreakOut } from '../utils/location';
-    import { updateLivenessProgress } from '../utils/liveness';
+    import { initCamera, loadFaceModels } from '../utils/camera';
+    import { getRandomOffset, fetchLocation } from '../utils/location';
     import { TARGET_BASE_URL } from '../utils/constants';
     import { secureFetch } from '../utils/apiClient';
-
+    import { updateButtonStates, handleAttendanceSubmission } from '../utils/attendanceLogic';
+    import { processPhoto, runCaptureSequence } from '../utils/photoProcessor';
+    import { updateFaceDetection, setAutoCapturing } from '../utils/faceDetectionLoop';
 
     const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
 
@@ -89,143 +74,17 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     };
 
     if (!state.token) window.location.href = '/login';
-    
-    function updateButtonStates() {
-        console.log('Updating button states...', {
-            targetLoc: !!state.targetLocation,
-            photo: !!state.capturedPhoto,
-            hasCheckIn: state.hasCheckedIn,
-            hasCheckOut: state.hasCheckedOut,
-            hasBreakOut: state.hasBreakOut,
-            hasBreakIn: state.hasBreakIn
-        });
 
-        if (!state.targetLocation || !state.capturedPhoto) {
-            ui.checkInBtn.disabled = true;
-            ui.breakInBtn.disabled = true;
-            ui.breakOutBtn.disabled = true;
-            return;
-        }
-
-        // 1. Check In / Out Button Logic
-        if (state.hasCheckedIn && state.hasCheckedOut) {
-            ui.checkInBtn.disabled = true;
-            ui.checkInBtn.textContent = 'Sudah Absen Hari Ini';
-            ui.checkInBtn.className = ui.checkInBtn.className.replace('bg-rose-600', 'bg-slate-400');
-        } else if (state.hasCheckedIn) {
-            ui.checkInBtn.disabled = false;
-            ui.checkInBtn.textContent = 'Kirim Check-Out';
-            ui.checkInBtn.classList.replace('bg-indigo-600', 'bg-rose-600');
-        } else {
-            ui.checkInBtn.disabled = false;
-            ui.checkInBtn.textContent = 'Kirim Absensi';
-            // ensure color is indigo
-            if (ui.checkInBtn.classList.contains('bg-rose-600')) {
-                ui.checkInBtn.classList.replace('bg-rose-600', 'bg-indigo-600');
-            }
-        }
-
-        // 2. Break Buttons Logic (User: Break Out first, then Break In)
-        // Only allow break if checked in and not yet checked out
-        if (state.hasCheckedIn && !state.hasCheckedOut) {
-            if (!state.hasBreakOut) {
-                // Step 1: Break Out is active
-                ui.breakOutBtn.disabled = false;
-                ui.breakInBtn.disabled = true;
-            } else if (!state.hasBreakIn) {
-                // Step 2: Break Out done, Break In is active
-                ui.breakOutBtn.disabled = true;
-                ui.breakInBtn.disabled = false;
-            } else {
-                // Step 3: All break activities done
-                ui.breakOutBtn.disabled = true;
-                ui.breakInBtn.disabled = true;
-                ui.breakOutBtn.textContent = 'Selesai Istirahat';
-                ui.breakInBtn.textContent = 'Selesai Istirahat';
-            }
-        } else {
-            // Cannot break if not working
-            ui.breakInBtn.disabled = true;
-            ui.breakOutBtn.disabled = true;
-        }
-    }
-
-    async function processPhoto(dataUrl: string) {
-        console.log('Processing photo...');
-        state.capturedPhoto = dataUrl;
-        ui.photo.src = dataUrl;
-        ui.video.classList.add('hidden');
-        ui.photo.classList.remove('hidden');
-        ui.captureBtn?.classList.add('hidden');
-        ui.galleryBtn?.classList.add('hidden');
-        ui.retakeBtn?.classList.remove('hidden');
-
-        state.faceEmbedding = await extractFaceEmbedding(ui.photo) || generateDummyEmbedding();
-        console.log('Extracted face embedding.');
-        
-        updateButtonStates();
-
-        if (ui.checkInStatus) {
-            ui.checkInStatus.innerHTML = '<strong>✅ Foto Berhasil Diambil</strong>';
-            ui.checkInStatus.className = 'status-message success-text mt-4';
-            ui.checkInStatus.classList.remove('hidden');
-            console.log('Photo processing complete, status updated.');
-        }
-    }
-
-    async function runCaptureSequence() {
-        if (!state.isCheckingLiveness) return;
-        console.log('Starting liveness capture sequence.');
-        
-        if (ui.livenessInstruction) {
-            ui.livenessInstruction.innerHTML = `
-                <div class="flex flex-col items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                    <span class="text-[13px] font-black tracking-widest text-white uppercase">HARAP SENYUM</span>
-                </div>
-            `;
-        }
-        if (ui.livenessProgress) ui.livenessProgress.style.width = `100%`;
-
-        // Pulse the scanning line or something to indicate capture
-        setTimeout(async () => {
-            state.isCheckingLiveness = false;
-            const videoWidth = ui.video.videoWidth;
-            const videoHeight = ui.video.videoHeight;
-            const size = Math.min(videoWidth, videoHeight);
-            const x = (videoWidth - size) / 2;
-            const y = (videoHeight - size) / 2;
-            
-            // Set canvas to 229x229 for specific square upload size
-            ui.canvas.width = 229;
-            ui.canvas.height = 229;
-            const ctx = ui.canvas.getContext('2d');
-            
-            if (ctx) {
-                // Ensure high quality image smoothing
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(ui.video, x, y, size, size, 0, 0, 229, 229);
-            }
-            console.log('Liveness capture complete. Processing photo from video stream.');
-            await processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8));
-            ui.livenessUI?.classList.add('hidden');
-        }, 200);
-    }
-
+    // Event Listeners
     ui.captureBtn?.addEventListener('click', () => {
-        console.log('Capture button clicked. Initiating liveness check.');
         ui.livenessUI?.classList.remove('hidden');
         state.isCheckingLiveness = true;
-        runCaptureSequence();
+        runCaptureSequence(ui, state);
     });
 
-    ui.galleryBtn?.addEventListener('click', () => {
-        console.log('Gallery button clicked. Opening file input.');
-        ui.fileInput?.click();
-    });
+    ui.galleryBtn?.addEventListener('click', () => ui.fileInput?.click());
+    
     ui.fileInput?.addEventListener('change', (e: any) => {
-        console.log('File selected from gallery.');
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
@@ -237,18 +96,15 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                     const size = Math.min(videoWidth, videoHeight);
                     const x = (videoWidth - size) / 2;
                     const y = (videoHeight - size) / 2;
-                    
                     ui.canvas.width = 229;
                     ui.canvas.height = 229;
                     const ctx = ui.canvas.getContext('2d');
-                    
                     if (ctx) {
                         ctx.imageSmoothingEnabled = true;
                         ctx.imageSmoothingQuality = 'high';
                         ctx.drawImage(img, x, y, size, size, 0, 0, 229, 229);
                     }
-                    console.log('Processing image from gallery.');
-                    processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8));
+                    processPhoto(ui.canvas.toDataURL('image/jpeg', 0.8), ui, state);
                 };
                 img.src = e.target?.result as string;
             };
@@ -257,7 +113,6 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     });
 
     ui.retakeBtn?.addEventListener('click', () => {
-        console.log('Retake button clicked. Resetting camera and state.');
         ui.video.classList.remove('hidden');
         ui.photo.classList.add('hidden');
         ui.captureBtn?.classList.remove('hidden');
@@ -265,142 +120,15 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         ui.retakeBtn.classList.add('hidden');
         state.capturedPhoto = null;
         state.faceEmbedding = null;
-        isAutoCapturing = false;
-        
-        updateButtonStates();
-        
+        setAutoCapturing(false);
+        updateButtonStates(ui, state);
         if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
-        const debugContainer = document.getElementById('jsonDebugContainer');
-        if (debugContainer) debugContainer.classList.add('hidden');
-        console.log('UI reset for new capture.');
+        document.getElementById('jsonDebugContainer')?.classList.add('hidden');
     });
 
-
-    
-    async function handleAttendanceSubmission(type: 'check-in' | 'check-out' | 'break-in' | 'break-out') {
-        if (!state.targetLocation || !state.capturedPhoto || !ui.checkInStatus || !state.token) {
-            console.log(`[${type}] Prerequisites not met. Aborting.`);
-            return;
-        }
-
-        let finalLat = state.simulatedLocation?.lat;
-        let finalLng = state.simulatedLocation?.lng;
-
-        if (!finalLat || !finalLng) {
-            const offset = getRandomOffset(10, state.targetLocation.latitude);
-            finalLat = state.targetLocation.latitude + offset.deltaLat;
-            finalLng = state.targetLocation.longitude + offset.deltaLng;
-        }
-
-        const btnMap = {
-            'check-in': ui.checkInBtn,
-            'check-out': ui.checkInBtn,
-            'break-in': ui.breakInBtn,
-            'break-out': ui.breakOutBtn
-        };
-        const currentBtn = btnMap[type];
-
-        ui.checkInBtn.disabled = true;
-        ui.breakInBtn.disabled = true;
-        ui.breakOutBtn.disabled = true;
-        
-        const originalText = currentBtn.textContent;
-        currentBtn.textContent = 'Mengirim...';
-        
-        ui.checkInStatus.classList.remove('hidden');
-        ui.checkInStatus.className = 'status-message info-text';
-
-        const payload = {
-            lat: finalLat,
-            lng: finalLng,
-            device_id: USER_AGENT,
-            photo_base64: state.capturedPhoto,
-            face_embedding: state.faceEmbedding,
-            is_mock_location: false,
-            location_accuracy: 8.5 + Math.random() * 1.5
-        };
-
-        let result: any;
-        switch(type) {
-            case 'check-in': result = await submitCheckIn(state.token, payload); break;
-            case 'check-out': result = await submitCheckOut(state.token, payload); break;
-            case 'break-in': result = await submitBreakIn(state.token, payload); break;
-            case 'break-out': result = await submitBreakOut(state.token, payload); break;
-        }
-
-        ui.checkInStatus.innerHTML = result.ok 
-            ? `<strong>✅ ${type.toUpperCase().replace('-', ' ')} Berhasil Disimpan</strong>` 
-            : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
-        ui.checkInStatus.className = `status-message mt-4 ${result.ok ? 'success-text' : 'error-text'}`;
-
-        const debugContainer = document.getElementById('jsonDebugContainer');
-        const jsonRequestPre = document.getElementById('jsonRequest');
-        const jsonResponsePre = document.getElementById('jsonResponse');
-        
-        if (debugContainer) {
-            if (jsonRequestPre) {
-                const displayPayload = { ...payload, photo_base64: payload.photo_base64.substring(0, 50) + '...' };
-                jsonRequestPre.textContent = JSON.stringify(displayPayload, null, 2);
-            }
-            if (jsonResponsePre) {
-                jsonResponsePre.textContent = JSON.stringify(result.data || { error: 'No data returned' }, null, 2);
-            }
-            debugContainer.classList.remove('hidden');
-        }
-
-        if (!result.ok) {
-            updateButtonStates();
-            currentBtn.textContent = 'Coba Lagi';
-        } else {
-            const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            
-            // Update state and UI based on successful submission
-            if (type === 'check-in') {
-                state.hasCheckedIn = true;
-                const inTimeEl = document.getElementById('clockInTime');
-                const inPhotoEl = document.getElementById('clockInPhoto') as HTMLImageElement;
-                const inPhotoPlaceholder = document.getElementById('clockInPhotoPlaceholder');
-                if (inTimeEl) inTimeEl.textContent = now;
-                if (inPhotoEl && state.capturedPhoto) {
-                    inPhotoEl.src = state.capturedPhoto;
-                    inPhotoEl.classList.remove('hidden');
-                    inPhotoPlaceholder?.classList.add('hidden');
-                }
-            }
-            if (type === 'check-out') {
-                state.hasCheckedOut = true;
-                const outTimeEl = document.getElementById('clockOutTime');
-                const outPhotoEl = document.getElementById('clockOutPhoto') as HTMLImageElement;
-                const outPhotoPlaceholder = document.getElementById('clockOutPhotoPlaceholder');
-                if (outTimeEl) outTimeEl.textContent = now;
-                if (outPhotoEl && state.capturedPhoto) {
-                    outPhotoEl.src = state.capturedPhoto;
-                    outPhotoEl.classList.remove('hidden');
-                    outPhotoPlaceholder?.classList.add('hidden');
-                }
-            }
-            if (type === 'break-out') {
-                state.hasBreakOut = true;
-                const breakOutEl = document.getElementById('breakOutTime');
-                if (breakOutEl) breakOutEl.textContent = now;
-            }
-            if (type === 'break-in') {
-                state.hasBreakIn = true;
-                const breakInEl = document.getElementById('breakInTime');
-                if (breakInEl) breakInEl.textContent = now;
-            }
-            
-            updateButtonStates();
-            currentBtn.textContent = 'Selesai';
-        }
-    }
-
-    ui.checkInBtn?.addEventListener('click', () => {
-        handleAttendanceSubmission(state.hasCheckedIn ? 'check-out' : 'check-in');
-    });
-
-    ui.breakInBtn?.addEventListener('click', () => handleAttendanceSubmission('break-in'));
-    ui.breakOutBtn?.addEventListener('click', () => handleAttendanceSubmission('break-out'));
+    ui.checkInBtn?.addEventListener('click', () => handleAttendanceSubmission(state.hasCheckedIn ? 'check-out' : 'check-in', ui, state, USER_AGENT));
+    ui.breakInBtn?.addEventListener('click', () => handleAttendanceSubmission('break-in', ui, state, USER_AGENT));
+    ui.breakOutBtn?.addEventListener('click', () => handleAttendanceSubmission('break-out', ui, state, USER_AGENT));
 
     document.getElementById('copyRequestBtn')?.addEventListener('click', () => {
         const jsonPre = document.getElementById('jsonRequest');
@@ -412,7 +140,6 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 btn.textContent = 'COPIED!';
                 setTimeout(() => btn.textContent = originalText, 2000);
             }
-            console.log('JSON request copied to clipboard.');
         }
     });
 
@@ -426,104 +153,23 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 btn.textContent = 'COPIED!';
                 setTimeout(() => btn.textContent = originalText, 2000);
             }
-            console.log('JSON response copied to clipboard.');
         }
     });
-
-
-
-    let isAutoCapturing = false;
-    let isDetecting = false;
-    const HOLD_DURATION = 500; // This variable is not used, but kept as per original code.
-    let smoothedScore = 0;
-
-    async function updateFaceDetection() {
-        if (ui.video.paused || ui.video.ended || state.capturedPhoto !== null || isAutoCapturing || isDetecting) {
-            if (state.capturedPhoto !== null) {
-                ui.livenessUI?.classList.add('hidden');
-            }
-            setTimeout(updateFaceDetection, 100);
-            return;
-        }
-        
-        isDetecting = true;
-        try {
-            // @ts-ignore
-            const detection = await faceapi.detectSingleFace(ui.video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
-
-            const faceStatusDot = document.getElementById('faceStatusDot');
-
-            if (ui.faceMatch) {
-                if (detection) {
-                    const rawScore = detection.detection.score * 100;
-                    // Smoother factor: 0.15 for even more stability
-                    smoothedScore = smoothedScore + (rawScore - smoothedScore) * 0.15;
-                    const displayScore = Math.round(smoothedScore);
-
-                    ui.faceMatch.textContent = `Harap Senyum (${displayScore}%)`;
-                    ui.faceMatch.className = 'text-indigo-600 font-extrabold';
-                    
-                    if (faceStatusDot) {
-                        faceStatusDot.className = 'w-1.5 h-1.5 rounded-full dot-success animate-pulse-slow';
-                    }
-
-                    // Auto capture only when visual score reaches 70%
-                    if (displayScore >= 70 && !isAutoCapturing) {
-                        console.log(`Face detected with score ${displayScore}%. Initiating auto-capture.`);
-                        isAutoCapturing = true;
-                        ui.livenessUI?.classList.remove('hidden');
-                        if (ui.livenessInstruction) {
-                            ui.livenessInstruction.innerHTML = `
-                                <div class="flex flex-col items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mb-2 animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                                    <span class="text-[13px] font-black tracking-widest text-white uppercase">HARAP SENYUM</span>
-                                </div>
-                            `;
-                        }
-                        state.isCheckingLiveness = true;
-                        runCaptureSequence();
-                    }
-                } else {
-                    // Gradually fade out score when no face is detected
-                    smoothedScore = smoothedScore * 0.7;
-                    if (smoothedScore < 1) smoothedScore = 0;
-                    
-                    ui.livenessUI?.classList.add('hidden');
-                    ui.faceMatch.textContent = 'Mencari Wajah...';
-                    ui.faceMatch.className = 'text-slate-400 font-bold';
-                    if (faceStatusDot) {
-                        faceStatusDot.className = 'w-1.5 h-1.5 rounded-full dot-searching animate-pulse-slow';
-                    }
-                }
-            }
-            if (ui.faceMatchProgress) {
-                ui.faceMatchProgress.style.width = detection ? `${Math.round(smoothedScore)}%` : '15%';
-            }
-        } catch (e: any) {
-            console.error(`Face detection error: ${e.message}`);
-        } finally {
-            isDetecting = false;
-            setTimeout(updateFaceDetection, 100);
-        }
-    }
 
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        console.log('Logout button clicked. Clearing local storage and redirecting.');
         localStorage.clear();
-        window.location.href = 'login.html';
-
+        window.location.href = '/login';
     });
 
+    // Initialization
     (async () => {
-        // PRIORITY 1: Setup UI & Data Fetching
         console.log('Starting Dashboard Initialization...');
-
+        
         // 1. Setup User Profile
         const userNameEl = document.getElementById('userName');
         if (userNameEl) {
             const fullName = localStorage.getItem('full_name');
             userNameEl.textContent = fullName ? fullName.trim() : 'Pegawai Kinerja';
-            console.log(`Set user name: ${userNameEl.textContent}`);
         }
 
         const photoPath = localStorage.getItem('photo_path');
@@ -534,14 +180,12 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 userPhoto.src = `${TARGET_BASE_URL}${photoPath}`;
                 userPhoto.classList.remove('hidden');
                 userPhotoPlaceholder.classList.add('hidden');
-                console.log('Set user photo from local storage.');
             }
         }
 
         // 2. Fetch Attendance Info
         try {
-            console.log('Fetching attendance data direct from target (secure)...');
-            const trimmedToken = state.token.trim();
+            const trimmedToken = state.token?.trim() || '';
             const attendRes = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/today`, {
                 headers: { 
                     'Authorization': `Bearer ${trimmedToken}`,
@@ -552,54 +196,31 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             
             if (attendRes.ok) {
                 const attendData = await attendRes.json();
-                console.log('Attendance Data Received:', attendData);
-
                 if (attendData) {
-                    // Update Clock In
                     if (attendData.clock_in) {
                         state.hasCheckedIn = true;
-                        console.log(`Processing Clock In: ${attendData.clock_in}`);
                         const inTimeEl = document.getElementById('clockInTime');
                         const inPhotoEl = document.getElementById('clockInPhoto') as HTMLImageElement;
                         const inPhotoPlaceholder = document.getElementById('clockInPhotoPlaceholder');
-                        
-                        if (inTimeEl) {
-                            inTimeEl.textContent = new Date(attendData.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                            console.log(`Updated clock in time: ${inTimeEl.textContent}`);
-                        }
+                        if (inTimeEl) inTimeEl.textContent = new Date(attendData.clock_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                         if (attendData.in_photo && inPhotoEl && inPhotoPlaceholder) {
                             inPhotoEl.src = `${TARGET_BASE_URL}${attendData.in_photo}`;
                             inPhotoEl.classList.remove('hidden');
                             inPhotoPlaceholder.classList.add('hidden');
-                            console.log('Updated clock in photo.');
                         }
-                    } else {
-                        console.log('No clock_in data found for today.');
                     }
-
-                    // Update Clock Out
                     if (attendData.clock_out) {
                         state.hasCheckedOut = true;
-                        console.log(`Processing Clock Out: ${attendData.clock_out}`);
                         const outTimeEl = document.getElementById('clockOutTime');
                         const outPhotoEl = document.getElementById('clockOutPhoto') as HTMLImageElement;
                         const outPhotoPlaceholder = document.getElementById('clockOutPhotoPlaceholder');
-                        
-                        if (outTimeEl) {
-                            outTimeEl.textContent = new Date(attendData.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                            console.log(`Updated clock out time: ${outTimeEl.textContent}`);
-                        }
+                        if (outTimeEl) outTimeEl.textContent = new Date(attendData.clock_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                         if (attendData.out_photo && outPhotoEl && outPhotoPlaceholder) {
                             outPhotoEl.src = `${TARGET_BASE_URL}${attendData.out_photo}`;
                             outPhotoEl.classList.remove('hidden');
                             outPhotoPlaceholder.classList.add('hidden');
-                            console.log('Updated clock out photo.');
                         }
-                    } else {
-                        console.log('No clock_out data found for today.');
                     }
-
-                    // Update Break In/Out
                     if (attendData.break_in) {
                         state.hasBreakIn = true;
                         const breakInEl = document.getElementById('breakInTime');
@@ -610,50 +231,25 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                         const breakOutEl = document.getElementById('breakOutTime');
                         if (breakOutEl) breakOutEl.textContent = new Date(attendData.break_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                     }
-                    
-                    // Initial update of button text and state (without photo yet)
-                    updateButtonStates();
-                } else {
-                    console.log('No attendance record for today yet (null or empty).');
-                    // If no attendance record, the button should remain 'Kirim Absensi' and enabled.
-                    // The rest of the UI setup (camera, location) should still proceed.
+                    updateButtonStates(ui, state);
                 }
-            } else {
-                console.log(`Attendance fetch failed: ${attendRes.status} ${attendRes.statusText}`);
             }
         } catch (e: any) {
-            alert('Gagal mengambil Informasi Absen: ' + e.message);
             console.error(`Error fetching today attendance: ${e.message}`);
         }
 
-
-        // PRIORITY 2: Heavy Tasks (Camera & Location)
-        console.log('Initializing camera...');
+        // 3. Setup Camera & Face detection
         initCamera(ui.video);
-        console.log('Loading face models...');
-        loadFaceModels(); // Async load
-        console.log('Starting face detection updates...');
-        updateFaceDetection();
+        loadFaceModels();
+        updateFaceDetection(ui, state);
 
-        // 3. Fetch Location
-        console.log('Fetching target location...');
+        // 4. Fetch Location
         const loc = await fetchLocation(state.token || '');
         if (loc) {
-            console.log(`Location data received: ${loc.name} (${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)})`);
             state.targetLocation = loc;
-
-            // Calculate Simulated Location
             const offset = getRandomOffset(10, loc.latitude);
-            state.simulatedLocation = {
-                lat: loc.latitude + offset.deltaLat,
-                lng: loc.longitude + offset.deltaLng
-            };
-
-            // Calculate Approximate Distance
-            const estimatedDistance = Math.sqrt(
-                Math.pow(offset.deltaLat * 111320, 2) + 
-                Math.pow(offset.deltaLng * 111320 * Math.cos(loc.latitude * Math.PI / 180), 2)
-            ).toFixed(1);
+            state.simulatedLocation = { lat: loc.latitude + offset.deltaLat, lng: loc.longitude + offset.deltaLng };
+            const estimatedDistance = Math.sqrt(Math.pow(offset.deltaLat * 111320, 2) + Math.pow(offset.deltaLng * 111320 * Math.cos(loc.latitude * Math.PI / 180), 2)).toFixed(1);
 
             const targetNameEl = document.getElementById('targetName');
             const targetAddressEl = document.getElementById('targetAddress');
@@ -673,14 +269,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 statusBadge.textContent = 'Sesuai';
                 statusBadge.classList.add('success');
             }
-            console.log('Location UI updated.');
-            updateButtonStates();
-        } else {
-            alert('Gagal mengambil Lokasi Kantor. Pastikan GPS HP hidup dan internet lancar.');
-            console.log('Location data unavailable or fetch failed.');
+            updateButtonStates(ui, state);
         }
-
-        console.log('Dashboard Initialization Complete.');
     })();
 </script>
 ```
