@@ -48,3 +48,10 @@ import Layout from '../layouts/Layout.astro';
         </div>
     </div>
 </Layout>
+
+<script>
+    import { checkForUpdates } from '../utils/otaUpdate';
+    
+    // Jalankan pengecekan update saat aplikasi pertama kali dimuat
+    checkForUpdates();
+</script>
