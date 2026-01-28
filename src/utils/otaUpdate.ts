@@ -25,40 +25,28 @@ export async function checkForUpdates() {
         console.log(`[OTA] Status -> Local: ${currentLocalVersion}, Server: ${serverVersion}`);
 
         if (serverVersion !== currentLocalVersion) {
-            // Tampilkan Alert agar user tahu update terdeteksi
-            const confirmUpdate = confirm(`UPDATE TERSEDIA!\nVersi Anda: ${currentLocalVersion}\nVersi Server: ${serverVersion}\n\nDownload update sekarang? (2.5MB)`);
+            const confirmUpdate = confirm(`UPDATE TERSEDIA!\nVersi Anda: ${currentLocalVersion}\nVersi Server: ${serverVersion}\n\nDownload? (2.5MB)`);
 
-            if (!confirmUpdate) {
-                console.log('[OTA] User cancelled update');
-                return;
-            }
+            if (!confirmUpdate) return;
 
-            console.log('[OTA] Starting download from:', `${OTA_UPDATE_URL}/dist.zip`);
+            alert('DEBUG 1: Memulai Download...');
 
             try {
-                // Set timeout untuk download (30 detik)
-                const downloadPromise = CapacitorUpdater.download({
+                const update = await CapacitorUpdater.download({
                     url: `${OTA_UPDATE_URL}/dist.zip?t=${Date.now()}`,
                     version: serverVersion,
                 });
 
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Download timeout setelah 30 detik')), 30000);
-                });
-
-                const update = await Promise.race([downloadPromise, timeoutPromise]) as any;
-
-                console.log('[OTA] Download success! Bundle ID:', update.id);
+                alert(`DEBUG 2: Berhasil Download!\nID: ${update.id}\n\nMenerapkan update...`);
 
                 await CapacitorUpdater.set(update);
                 await storage.set('ota_current_version', serverVersion);
 
-                alert(`UPDATE SUKSES!\nAplikasi diperbarui ke v${serverVersion}.\nMemuat ulang...`);
+                alert('DEBUG 3: Update Sukses! Reloading...');
                 window.location.reload();
             } catch (dlError: any) {
                 console.error('[OTA] Download Error:', dlError);
-                const errorMsg = dlError.message || dlError.toString() || 'Unknown error';
-                alert(`DOWNLOAD GAGAL!\n\nError: ${errorMsg}\n\nCoba:\n1. Pastikan internet stabil\n2. Restart aplikasi\n3. Atau install APK baru`);
+                alert('GAGAL: ' + JSON.stringify(dlError));
             }
         } else {
             console.log('[OTA] Already up to date.');
