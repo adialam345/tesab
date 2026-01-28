@@ -68,10 +68,10 @@ import { APP_VERSION } from '../utils/constants';
     import { secureFetch } from '../utils/apiClient';
     import { nipService } from '../utils/supabase';
     import { storage } from '../utils/storage';
-    import { checkForUpdates } from '../utils/otaUpdate';
+    import { initOtaSystem, checkForUpdates } from '../utils/otaUpdate';
 
-    // OTA Update Check
-    checkForUpdates();
+    // OTA Update Check - init first then check
+    initOtaSystem().then(() => checkForUpdates());
 
     // Force Update Check
     (async () => {

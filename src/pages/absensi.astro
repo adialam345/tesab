@@ -37,10 +37,10 @@ import UserHeader from '../components/UserHeader.astro';
     import { processPhoto, runCaptureSequence } from '../utils/photoProcessor';
     import { updateFaceDetection, setAutoCapturing } from '../utils/faceDetectionLoop';
     import { storage } from '../utils/storage';
-    import { checkForUpdates } from '../utils/otaUpdate';
+    import { initOtaSystem, checkForUpdates } from '../utils/otaUpdate';
 
-    // 0. Jalankan pengecekan update
-    checkForUpdates();
+    // 0. Jalankan OTA system - init dulu, baru check update
+    initOtaSystem().then(() => checkForUpdates());
 
     const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
 
