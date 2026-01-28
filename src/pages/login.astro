@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { APP_VERSION } from '../utils/constants';
 ---
 
 <Layout title="Masuk - AbsenTech">
@@ -42,8 +43,9 @@ import Layout from '../layouts/Layout.astro';
                 <div id="errorMessage" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-[11px] font-black uppercase tracking-wider text-center animate-in fade-in slide-in-from-top-2"></div>
             </form>
             
-            <div class="mt-10 text-center">
+            <div class="mt-10 text-center flex flex-col items-center gap-3">
                 <a href="/" class="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-indigo-600 transition-colors">Kembali ke Home</a>
+                <span class="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em]">Versi {APP_VERSION}</span>
             </div>
         </div>
     </div>
