@@ -18,7 +18,7 @@ export function getRandomOffset(radiusMeters: number, latitude: number) {
 export async function fetchLocation(token: string) {
     try {
         console.log('[fetchLocation] Fetching location with token starting with:', token.substring(0, 10));
-        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/opd/locations/my`, {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/organization/locations/my`, {
             headers: {
                 'Authorization': `Bearer ${token.trim()}`,
                 'Accept': 'application/json',
