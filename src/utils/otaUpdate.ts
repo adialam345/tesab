@@ -29,24 +29,28 @@ export async function checkForUpdates() {
 
             if (!confirmUpdate) return;
 
-            alert('DEBUG 1: Memulai Download...');
-
             try {
-                const update = await CapacitorUpdater.download({
+                console.log('[OTA] Downloading...');
+                const bundle = await CapacitorUpdater.download({
                     url: `${OTA_UPDATE_URL}/dist.zip?t=${Date.now()}`,
                     version: serverVersion,
                 });
 
-                alert(`DEBUG 2: Berhasil Download!\nID: ${update.id}\n\nMenerapkan update...`);
+                console.log('[OTA] Download complete, applying bundle:', bundle.id);
 
-                await CapacitorUpdater.set(update);
+                // Simpan versi baru ke storage
                 await storage.set('ota_current_version', serverVersion);
 
-                alert('DEBUG 3: Update Sukses! Reloading...');
-                window.location.reload();
+                // Set update menggunakan ID bundle khusus
+                await CapacitorUpdater.set({ id: bundle.id });
+
+                alert('Pembaruan Berhasil! Aplikasi akan memuat ulang.');
+
+                // Gunakan reload bawaan plugin yang lebih stabil
+                await CapacitorUpdater.reload();
             } catch (dlError: any) {
-                console.error('[OTA] Download Error:', dlError);
-                alert('GAGAL: ' + JSON.stringify(dlError));
+                console.error('[OTA] Error:', dlError);
+                alert('GAGAL UPDATE: ' + (dlError.message || JSON.stringify(dlError)));
             }
         } else {
             console.log('[OTA] Already up to date.');

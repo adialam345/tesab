@@ -15,43 +15,44 @@ $CONSTANTS_PATH = "src/utils/constants.ts"
 $PACKAGE_PATH = "package.json"
 
 # Update constants.ts
-$constants = Get-Content $CONSTANTS_PATH
-$constants = $constants -replace "APP_VERSION = '.*?'", "APP_VERSION = '$NEW_VERSION'"
-$constants | Set-Content $CONSTANTS_PATH
+(Get-Content $CONSTANTS_PATH) -replace "APP_VERSION = '.*?'", "APP_VERSION = '$NEW_VERSION'" | Set-Content $CONSTANTS_PATH
 
 # Update package.json
-$package = Get-Content $PACKAGE_PATH
-$newPackageLine = "`"version`": `"$NEW_VERSION`","
-$package = $package -replace '"version":\s*".*?",', $newPackageLine
-$package | Set-Content $PACKAGE_PATH
+(Get-Content $PACKAGE_PATH) -replace '"version":\s*".*?"', "`"version`": `"$NEW_VERSION`"" | Set-Content $PACKAGE_PATH
 
-# 3. Build Project
-Write-Host "2. Building Project dengan Astro..." -ForegroundColor Yellow
-npm run build
-if ($LASTEXITCODE -ne 0) { Write-Host "Build Gagal!"; exit }
+# 3. Bersihkan Folder Lama
+Write-Host "2. Membersihkan folder dist lama..." -ForegroundColor Gray
+if (Test-Path "dist") { Remove-Item -Recurse -Force "dist" }
+if (Test-Path "dist.zip") { Remove-Item -Force "dist.zip" }
 
-# Tunggu sampai file index muncul
-Write-Host "Menunggu sinkronisasi file sistem..."
-$timeout = 0
-while (!(Test-Path "dist/index.html") -and $timeout -lt 10) {
-    Start-Sleep -Seconds 1
-    $timeout++
+# 4. Build Project (Synchronous)
+Write-Host "3. Building Project dengan Astro (Mohon Tunggu...)" -ForegroundColor Yellow
+# Menggunakan cmd /c untuk memastikan npm terpanggil dengan benar dan ditunggu sampai selesai
+cmd /c "npm run build"
+if ($LASTEXITCODE -ne 0) { 
+    Write-Host "Build Gagal!" -ForegroundColor Red
+    exit 
 }
-Start-Sleep -Seconds 2
 
-# 4. Create version.json (Memperbaiki parameter yang salah)
-Write-Host "3. Creating version.json..."
+# Verifikasi hasil build
+Write-Host "Verifikasi file hasil build..."
+if (!(Test-Path "dist/index.html")) {
+    Write-Host "ERROR: File dist/index.html tidak ditemukan!" -ForegroundColor Red
+    exit
+}
+
+# 5. Create version.json
+Write-Host "4. Creating version.json..."
 $JSON_CONTENT = '{"version": "' + $NEW_VERSION + '"}'
-# Menggunakan Out-File dengan encoding yang aman (ascii/utf8)
 $JSON_CONTENT | Out-File -FilePath "version.json" -Encoding ascii -Force
 
-# 5. Create dist.zip
-Write-Host "4. Creating dist.zip dari folder dist yang sudah lengkap..." -ForegroundColor Cyan
-if (Test-Path "dist.zip") { Remove-Item "dist.zip" }
+# 6. Create dist.zip
+Write-Host "5. Creating dist.zip..." -ForegroundColor Cyan
 Compress-Archive -Path "dist/*" -DestinationPath "dist.zip" -Force
 
-# 6. Upload to VPS
-Write-Host "5. Uploading to VPS (IPv6 Mode)..."
+# 7. Upload to VPS
+Write-Host "6. Uploading to VPS (IPv6 Mode)..."
+# Gunakan scp dengan -6 untuk IPv6
 scp -6 "dist.zip" "$($VPS_USER)@[$($VPS_IP)]:$($VPS_PATH)/dist.zip"
 if ($LASTEXITCODE -ne 0) { Write-Host "Gagal Upload dist.zip!"; exit }
 
