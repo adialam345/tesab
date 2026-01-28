@@ -65,8 +65,35 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Break In -->
+                <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100/50">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Istirahat In</span>
+                    </div>
+                    <div id="breakInTime" class="text-sm font-black text-slate-800">--:--</div>
+                </div>
+
+                <!-- Break Out -->
+                <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100/50">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-2 h-2 rounded-full bg-cyan-600"></div>
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Istirahat Out</span>
+                    </div>
+                    <div id="breakOutTime" class="text-sm font-black text-slate-800">--:--</div>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="mt-4 grid grid-cols-2 gap-3">
+        <button id="breakInBtn" class="flex items-center justify-center gap-2 py-3 bg-amber-500 text-white rounded-2xl font-black text-xs shadow-lg shadow-amber-100 transition-all hover:bg-amber-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none" disabled>
+            Istirahat (In)
+        </button>
+        <button id="breakOutBtn" class="flex items-center justify-center gap-2 py-3 bg-cyan-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-cyan-100 transition-all hover:bg-cyan-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none" disabled>
+            Istirahat (Out)
+        </button>
     </div>
 
     <div class="mt-4">

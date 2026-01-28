@@ -81,4 +81,40 @@ export async function submitCheckOut(token: string, payload: any) {
         return { ok: false, error: String(error) };
     }
 }
+// Submit break-in
+export async function submitBreakIn(token: string, payload: any) {
+    try {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/break-in`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
+        const data = await response.json();
+        return { ok: response.ok, status: response.status, data };
+    } catch (error) {
+        return { ok: false, error: String(error) };
+    }
+}
+
+// Submit break-out
+export async function submitBreakOut(token: string, payload: any) {
+    try {
+        const response = await secureFetch(`${TARGET_BASE_URL}/api/v1/attendance/break-out`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        return { ok: response.ok, status: response.status, data };
+    } catch (error) {
+        return { ok: false, error: String(error) };
+    }
+}

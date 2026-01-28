@@ -46,7 +46,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
 <script>
     import { initCamera, loadFaceModels, extractFaceEmbedding, generateDummyEmbedding } from '../utils/camera';
-    import { getRandomOffset, fetchLocation, submitCheckIn, submitCheckOut } from '../utils/location';
+    import { getRandomOffset, fetchLocation, submitCheckIn, submitCheckOut, submitBreakIn, submitBreakOut } from '../utils/location';
     import { updateLivenessProgress } from '../utils/liveness';
     import { TARGET_BASE_URL } from '../utils/constants';
     import { secureFetch } from '../utils/apiClient';
@@ -61,6 +61,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         faceEmbedding: null as number[] | null,
         isCheckingLiveness: false,
         isCheckingOut: false,
+        isBreakIn: false,
+        isBreakOut: false,
         token: localStorage.getItem('access_token')
     };
 
@@ -78,7 +80,9 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         livenessInstruction: document.getElementById('livenessInstruction'),
         livenessProgress: document.getElementById('livenessProgress'),
         faceMatch: document.getElementById('faceMatch'),
-        faceMatchProgress: document.getElementById('faceMatchProgress')
+        faceMatchProgress: document.getElementById('faceMatchProgress'),
+        breakInBtn: document.getElementById('breakInBtn') as HTMLButtonElement,
+        breakOutBtn: document.getElementById('breakOutBtn') as HTMLButtonElement
     };
 
     if (!state.token) window.location.href = '/login';
@@ -97,7 +101,9 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         console.log('Extracted face embedding.');
         if (state.targetLocation) {
             ui.checkInBtn.disabled = false;
-            console.log('Check-in button enabled.');
+            ui.breakInBtn.disabled = false;
+            ui.breakOutBtn.disabled = false;
+            console.log('Check-in and Break buttons enabled.');
         }
 
         if (ui.checkInStatus) {
@@ -202,13 +208,16 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         state.faceEmbedding = null;
         isAutoCapturing = false;
         ui.checkInBtn.disabled = true;
+        ui.breakInBtn.disabled = true;
+        ui.breakOutBtn.disabled = true;
         if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
     });
 
-    ui.checkInBtn?.addEventListener('click', async () => {
-        console.log('Check-in/out button clicked.');
+
+    
+    async function handleAttendanceSubmission(type: 'check-in' | 'check-out' | 'break-in' | 'break-out') {
         if (!state.targetLocation || !state.capturedPhoto || !ui.checkInStatus || !state.token) {
-            console.log('Check-in/out prerequisites not met. Aborting.');
+            console.log(`[${type}] Prerequisites not met. Aborting.`);
             return;
         }
 
@@ -221,11 +230,23 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             finalLng = state.targetLocation.longitude + offset.deltaLng;
         }
 
+        const btnMap = {
+            'check-in': ui.checkInBtn,
+            'check-out': ui.checkInBtn,
+            'break-in': ui.breakInBtn,
+            'break-out': ui.breakOutBtn
+        };
+        const currentBtn = btnMap[type];
+
         ui.checkInBtn.disabled = true;
-        ui.checkInBtn.textContent = 'Mengirim...';
+        ui.breakInBtn.disabled = true;
+        ui.breakOutBtn.disabled = true;
+        
+        const originalText = currentBtn.textContent;
+        currentBtn.textContent = 'Mengirim...';
+        
         ui.checkInStatus.classList.remove('hidden');
         ui.checkInStatus.className = 'status-message info-text';
-        console.log('Preparing payload for submission.');
 
         const payload = {
             lat: finalLat,
@@ -236,27 +257,26 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
             is_mock_location: false,
             location_accuracy: 8.5 + Math.random() * 1.5
         };
-        console.log('Payload prepared.');
 
-        console.log('Submitting check-in/out...');
-        const result = state.isCheckingOut 
-            ? await submitCheckOut(state.token, payload)
-            : await submitCheckIn(state.token, payload);
-        
-        console.log('API call result: ' + (result.ok ? 'Success' : 'Failure') + ' (Status: ' + result.status + ')');
+        let result: any;
+        switch(type) {
+            case 'check-in': result = await submitCheckIn(state.token, payload); break;
+            case 'check-out': result = await submitCheckOut(state.token, payload); break;
+            case 'break-in': result = await submitBreakIn(state.token, payload); break;
+            case 'break-out': result = await submitBreakOut(state.token, payload); break;
+        }
+
         ui.checkInStatus.innerHTML = result.ok 
-            ? `<strong>✅ ${state.isCheckingOut ? 'Check-Out' : 'Absensi'} Berhasil Disimpan</strong>` 
+            ? `<strong>✅ ${type.toUpperCase().replace('-', ' ')} Berhasil Disimpan</strong>` 
             : `<strong>❌ Gagal Mengirim (${result.status})</strong>`;
         ui.checkInStatus.className = `status-message mt-4 ${result.ok ? 'success-text' : 'error-text'}`;
-        
-        // Show Raw JSON (Request & Response)
+
         const debugContainer = document.getElementById('jsonDebugContainer');
         const jsonRequestPre = document.getElementById('jsonRequest');
         const jsonResponsePre = document.getElementById('jsonResponse');
         
         if (debugContainer) {
             if (jsonRequestPre) {
-                // Remove photo_base64 from display if it's too long, or just show its existence
                 const displayPayload = { ...payload, photo_base64: payload.photo_base64.substring(0, 50) + '...' };
                 jsonRequestPre.textContent = JSON.stringify(displayPayload, null, 2);
             }
@@ -264,18 +284,24 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 jsonResponsePre.textContent = JSON.stringify(result.data || { error: 'No data returned' }, null, 2);
             }
             debugContainer.classList.remove('hidden');
-            console.log('Displaying debug JSON views.');
         }
 
         if (!result.ok) {
             ui.checkInBtn.disabled = false;
-            ui.checkInBtn.textContent = 'Coba Lagi';
-            console.log('Submission failed, enabling retry.');
+            ui.breakInBtn.disabled = false;
+            ui.breakOutBtn.disabled = false;
+            currentBtn.textContent = 'Coba Lagi';
         } else {
-            ui.checkInBtn.textContent = 'Selesai';
-            console.log('Submission successful.');
+            currentBtn.textContent = 'Selesai';
         }
+    }
+
+    ui.checkInBtn?.addEventListener('click', () => {
+        handleAttendanceSubmission(state.isCheckingOut ? 'check-out' : 'check-in');
     });
+
+    ui.breakInBtn?.addEventListener('click', () => handleAttendanceSubmission('break-in'));
+    ui.breakOutBtn?.addEventListener('click', () => handleAttendanceSubmission('break-out'));
 
     document.getElementById('copyRequestBtn')?.addEventListener('click', () => {
         const jsonPre = document.getElementById('jsonRequest');
@@ -316,6 +342,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         state.faceEmbedding = null;
         isAutoCapturing = false;
         ui.checkInBtn.disabled = true;
+        ui.breakInBtn.disabled = true;
+        ui.breakOutBtn.disabled = true;
         if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
         const debugContainer = document.getElementById('jsonDebugContainer');
         if (debugContainer) debugContainer.classList.add('hidden');
@@ -485,6 +513,16 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                         }
                     } else {
                         console.log('No clock_out data found for today.');
+                    }
+
+                    // Update Break In/Out
+                    if (attendData.break_in) {
+                        const breakInEl = document.getElementById('breakInTime');
+                        if (breakInEl) breakInEl.textContent = new Date(attendData.break_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    }
+                    if (attendData.break_out) {
+                        const breakOutEl = document.getElementById('breakOutTime');
+                        if (breakOutEl) breakOutEl.textContent = new Date(attendData.break_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                     }
                     
                     // Decide if next action is check-out
