@@ -60,7 +60,10 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         capturedPhoto: null as string | null,
         faceEmbedding: null as number[] | null,
         isCheckingLiveness: false,
-        isCheckingOut: false,
+        hasCheckedIn: false,
+        hasCheckedOut: false,
+        hasBreakOut: false,
+        hasBreakIn: false,
         isBreakIn: false,
         isBreakOut: false,
         token: localStorage.getItem('access_token')
@@ -86,6 +89,66 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
     };
 
     if (!state.token) window.location.href = '/login';
+    
+    function updateButtonStates() {
+        console.log('Updating button states...', {
+            targetLoc: !!state.targetLocation,
+            photo: !!state.capturedPhoto,
+            hasCheckIn: state.hasCheckedIn,
+            hasCheckOut: state.hasCheckedOut,
+            hasBreakOut: state.hasBreakOut,
+            hasBreakIn: state.hasBreakIn
+        });
+
+        if (!state.targetLocation || !state.capturedPhoto) {
+            ui.checkInBtn.disabled = true;
+            ui.breakInBtn.disabled = true;
+            ui.breakOutBtn.disabled = true;
+            return;
+        }
+
+        // 1. Check In / Out Button Logic
+        if (state.hasCheckedIn && state.hasCheckedOut) {
+            ui.checkInBtn.disabled = true;
+            ui.checkInBtn.textContent = 'Sudah Absen Hari Ini';
+            ui.checkInBtn.className = ui.checkInBtn.className.replace('bg-rose-600', 'bg-slate-400');
+        } else if (state.hasCheckedIn) {
+            ui.checkInBtn.disabled = false;
+            ui.checkInBtn.textContent = 'Kirim Check-Out';
+            ui.checkInBtn.classList.replace('bg-indigo-600', 'bg-rose-600');
+        } else {
+            ui.checkInBtn.disabled = false;
+            ui.checkInBtn.textContent = 'Kirim Absensi';
+            // ensure color is indigo
+            if (ui.checkInBtn.classList.contains('bg-rose-600')) {
+                ui.checkInBtn.classList.replace('bg-rose-600', 'bg-indigo-600');
+            }
+        }
+
+        // 2. Break Buttons Logic (User: Break Out first, then Break In)
+        // Only allow break if checked in and not yet checked out
+        if (state.hasCheckedIn && !state.hasCheckedOut) {
+            if (!state.hasBreakOut) {
+                // Step 1: Break Out is active
+                ui.breakOutBtn.disabled = false;
+                ui.breakInBtn.disabled = true;
+            } else if (!state.hasBreakIn) {
+                // Step 2: Break Out done, Break In is active
+                ui.breakOutBtn.disabled = true;
+                ui.breakInBtn.disabled = false;
+            } else {
+                // Step 3: All break activities done
+                ui.breakOutBtn.disabled = true;
+                ui.breakInBtn.disabled = true;
+                ui.breakOutBtn.textContent = 'Selesai Istirahat';
+                ui.breakInBtn.textContent = 'Selesai Istirahat';
+            }
+        } else {
+            // Cannot break if not working
+            ui.breakInBtn.disabled = true;
+            ui.breakOutBtn.disabled = true;
+        }
+    }
 
     async function processPhoto(dataUrl: string) {
         console.log('Processing photo...');
@@ -99,12 +162,8 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
         state.faceEmbedding = await extractFaceEmbedding(ui.photo) || generateDummyEmbedding();
         console.log('Extracted face embedding.');
-        if (state.targetLocation) {
-            ui.checkInBtn.disabled = false;
-            ui.breakInBtn.disabled = false;
-            ui.breakOutBtn.disabled = false;
-            console.log('Check-in and Break buttons enabled.');
-        }
+        
+        updateButtonStates();
 
         if (ui.checkInStatus) {
             ui.checkInStatus.innerHTML = '<strong>✅ Foto Berhasil Diambil</strong>';
@@ -207,10 +266,13 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         state.capturedPhoto = null;
         state.faceEmbedding = null;
         isAutoCapturing = false;
-        ui.checkInBtn.disabled = true;
-        ui.breakInBtn.disabled = true;
-        ui.breakOutBtn.disabled = true;
+        
+        updateButtonStates();
+        
         if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
+        const debugContainer = document.getElementById('jsonDebugContainer');
+        if (debugContainer) debugContainer.classList.add('hidden');
+        console.log('UI reset for new capture.');
     });
 
 
@@ -287,17 +349,54 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         }
 
         if (!result.ok) {
-            ui.checkInBtn.disabled = false;
-            ui.breakInBtn.disabled = false;
-            ui.breakOutBtn.disabled = false;
+            updateButtonStates();
             currentBtn.textContent = 'Coba Lagi';
         } else {
+            const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            
+            // Update state and UI based on successful submission
+            if (type === 'check-in') {
+                state.hasCheckedIn = true;
+                const inTimeEl = document.getElementById('clockInTime');
+                const inPhotoEl = document.getElementById('clockInPhoto') as HTMLImageElement;
+                const inPhotoPlaceholder = document.getElementById('clockInPhotoPlaceholder');
+                if (inTimeEl) inTimeEl.textContent = now;
+                if (inPhotoEl && state.capturedPhoto) {
+                    inPhotoEl.src = state.capturedPhoto;
+                    inPhotoEl.classList.remove('hidden');
+                    inPhotoPlaceholder?.classList.add('hidden');
+                }
+            }
+            if (type === 'check-out') {
+                state.hasCheckedOut = true;
+                const outTimeEl = document.getElementById('clockOutTime');
+                const outPhotoEl = document.getElementById('clockOutPhoto') as HTMLImageElement;
+                const outPhotoPlaceholder = document.getElementById('clockOutPhotoPlaceholder');
+                if (outTimeEl) outTimeEl.textContent = now;
+                if (outPhotoEl && state.capturedPhoto) {
+                    outPhotoEl.src = state.capturedPhoto;
+                    outPhotoEl.classList.remove('hidden');
+                    outPhotoPlaceholder?.classList.add('hidden');
+                }
+            }
+            if (type === 'break-out') {
+                state.hasBreakOut = true;
+                const breakOutEl = document.getElementById('breakOutTime');
+                if (breakOutEl) breakOutEl.textContent = now;
+            }
+            if (type === 'break-in') {
+                state.hasBreakIn = true;
+                const breakInEl = document.getElementById('breakInTime');
+                if (breakInEl) breakInEl.textContent = now;
+            }
+            
+            updateButtonStates();
             currentBtn.textContent = 'Selesai';
         }
     }
 
     ui.checkInBtn?.addEventListener('click', () => {
-        handleAttendanceSubmission(state.isCheckingOut ? 'check-out' : 'check-in');
+        handleAttendanceSubmission(state.hasCheckedIn ? 'check-out' : 'check-in');
     });
 
     ui.breakInBtn?.addEventListener('click', () => handleAttendanceSubmission('break-in'));
@@ -331,24 +430,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
         }
     });
 
-    ui.retakeBtn?.addEventListener('click', () => {
-        console.log('Retake button clicked. Resetting camera and state.');
-        ui.video.classList.remove('hidden');
-        ui.photo.classList.add('hidden');
-        ui.captureBtn?.classList.remove('hidden');
-        ui.galleryBtn?.classList.remove('hidden');
-        ui.retakeBtn.classList.add('hidden');
-        state.capturedPhoto = null;
-        state.faceEmbedding = null;
-        isAutoCapturing = false;
-        ui.checkInBtn.disabled = true;
-        ui.breakInBtn.disabled = true;
-        ui.breakOutBtn.disabled = true;
-        if (ui.checkInStatus) ui.checkInStatus.classList.add('hidden');
-        const debugContainer = document.getElementById('jsonDebugContainer');
-        if (debugContainer) debugContainer.classList.add('hidden');
-        console.log('UI reset for new capture.');
-    });
+
 
     let isAutoCapturing = false;
     let isDetecting = false;
@@ -475,6 +557,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 if (attendData) {
                     // Update Clock In
                     if (attendData.clock_in) {
+                        state.hasCheckedIn = true;
                         console.log(`Processing Clock In: ${attendData.clock_in}`);
                         const inTimeEl = document.getElementById('clockInTime');
                         const inPhotoEl = document.getElementById('clockInPhoto') as HTMLImageElement;
@@ -496,6 +579,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
                     // Update Clock Out
                     if (attendData.clock_out) {
+                        state.hasCheckedOut = true;
                         console.log(`Processing Clock Out: ${attendData.clock_out}`);
                         const outTimeEl = document.getElementById('clockOutTime');
                         const outPhotoEl = document.getElementById('clockOutPhoto') as HTMLImageElement;
@@ -517,25 +601,18 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
 
                     // Update Break In/Out
                     if (attendData.break_in) {
+                        state.hasBreakIn = true;
                         const breakInEl = document.getElementById('breakInTime');
                         if (breakInEl) breakInEl.textContent = new Date(attendData.break_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                     }
                     if (attendData.break_out) {
+                        state.hasBreakOut = true;
                         const breakOutEl = document.getElementById('breakOutTime');
                         if (breakOutEl) breakOutEl.textContent = new Date(attendData.break_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                     }
                     
-                    // Decide if next action is check-out
-                    if (attendData.clock_in && !attendData.clock_out) {
-                        state.isCheckingOut = true;
-                        ui.checkInBtn.textContent = 'Kirim Check-Out';
-                        ui.checkInBtn.classList.replace('bg-indigo-600', 'bg-rose-600');
-                        console.log('User has clocked in, setting state to Check-Out.');
-                    } else if (attendData.clock_in && attendData.clock_out) {
-                        ui.checkInBtn.textContent = 'Sudah Absen Hari Ini';
-                        ui.checkInBtn.disabled = true;
-                        console.log('User has clocked in and out, disabling check-in button.');
-                    }
+                    // Initial update of button text and state (without photo yet)
+                    updateButtonStates();
                 } else {
                     console.log('No attendance record for today yet (null or empty).');
                     // If no attendance record, the button should remain 'Kirim Absensi' and enabled.
@@ -597,6 +674,7 @@ import AttendanceInfo from '../components/AttendanceInfo.astro';
                 statusBadge.classList.add('success');
             }
             console.log('Location UI updated.');
+            updateButtonStates();
         } else {
             alert('Gagal mengambil Lokasi Kantor. Pastikan GPS HP hidup dan internet lancar.');
             console.log('Location data unavailable or fetch failed.');
