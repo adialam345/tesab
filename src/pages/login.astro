@@ -11,7 +11,7 @@ import { APP_VERSION } from '../utils/constants';
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 </div>
                 <h1 class="text-2xl font-black text-indigo-600 mb-2 tracking-tight">Selamat Datang (OTA)</h1>
-                <p class="text-slate-500 text-sm font-medium">Gunakan akun E-Kinerja Anda</p>
+                <p class="text-slate-500 text-sm font-medium">Gunakan akun E-Kinerja Anda 123</p>
             </div>
 
             <form id="loginForm" class="space-y-6">
@@ -70,28 +70,37 @@ import { APP_VERSION } from '../utils/constants';
     import { storage } from '../utils/storage';
     import { initOtaSystem, checkForUpdates } from '../utils/otaUpdate';
 
-    // OTA Update Check - init first then check
-    initOtaSystem().then(() => checkForUpdates());
+    // OTA Update Check - init safely
+    initOtaSystem()
+        .then(() => checkForUpdates())
+        .catch(err => console.error('OTA Init failed:', err));
 
     // Force Update Check
     (async () => {
-        const settings = await nipService.getSettings();
-        if (settings && settings.min_version) {
-            const minVersion = settings.min_version;
-            const updateUrl = settings.update_url;
+        try {
+            const settings = await nipService.getSettings();
+            if (settings && settings.min_version) {
+                const minVersion = settings.min_version;
+                const updateUrl = settings.update_url;
 
-            // Simple version comparison (e.g., "1.1.0" vs "1.0.0")
-            if (APP_VERSION < minVersion) {
-                const modal = document.getElementById('updateModal');
-                const link = document.getElementById('updateLink') as HTMLAnchorElement;
-                if (modal && link) {
-                    link.href = updateUrl || '#';
-                    modal.classList.remove('hidden');
-                    // Disable login form
-                    const form = document.getElementById('loginForm');
-                    if (form) form.innerHTML = '<p class="text-center font-bold text-rose-500">UPDATE DIWAJIBKAN</p>';
+                // Versi HP harus >= minVersion
+                if (APP_VERSION < minVersion) {
+                    const modal = document.getElementById('updateModal');
+                    const link = document.getElementById('updateLink') as HTMLAnchorElement;
+                    if (modal && link) {
+                        link.href = updateUrl || '#';
+                        modal.classList.remove('hidden');
+                    }
+                    // Tampilkan pesan error daripada menghapus form
+                    const errEl = document.getElementById('errorMessage');
+                    if (errEl) {
+                        errEl.textContent = 'VERSI APLIKASI TERLALU LAMA. HARAP UPDATE.';
+                        errEl.classList.remove('hidden');
+                    }
                 }
             }
+        } catch (e) {
+            console.error('Settings check failed:', e);
         }
     })();
 
