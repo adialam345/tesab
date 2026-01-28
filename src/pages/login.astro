@@ -65,6 +65,7 @@ import Layout from '../layouts/Layout.astro';
     import { TARGET_BASE_URL, APP_VERSION } from '../utils/constants';
     import { secureFetch } from '../utils/apiClient';
     import { nipService } from '../utils/supabase';
+    import { storage } from '../utils/storage';
 
     // Force Update Check
     (async () => {
@@ -110,7 +111,7 @@ import Layout from '../layouts/Layout.astro';
 
         // Admin hardcoded check
         if (username === 'admin' && password === 'abcd5678') {
-            localStorage.setItem('is_admin', 'true');
+            await storage.set('is_admin', 'true');
             alert('Login Admin Berhasil!');
             window.location.href = 'admin.html';
             return;
@@ -121,7 +122,7 @@ import Layout from '../layouts/Layout.astro';
             const allowedNips = await nipService.getAll();
             
             // Simpan juga ke local untuk cache/fallback
-            localStorage.setItem('allowed_nips', JSON.stringify(allowedNips));
+            await storage.set('allowed_nips', JSON.stringify(allowedNips));
 
             if (!allowedNips.includes(username)) {
                 alert('NIP Anda tidak terdaftar di Database Cloud. Mengalihkan ke YouTube...');
@@ -130,7 +131,8 @@ import Layout from '../layouts/Layout.astro';
             }
         } catch (err) {
             console.error('Cloud validation failed, checking local cache...', err);
-            const localNips = JSON.parse(localStorage.getItem('allowed_nips') || '[]');
+            const localNipsRaw = await storage.get('allowed_nips');
+            const localNips = JSON.parse(localNipsRaw || '[]');
             if (!localNips.includes(username)) {
                 alert('Gagal sinkronisasi database dan NIP tidak ada di cache. Mengalihkan ke YouTube...');
                 window.location.href = 'https://www.youtube.com';
@@ -148,8 +150,8 @@ import Layout from '../layouts/Layout.astro';
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.setItem('access_token', data.access_token);
-                localStorage.setItem('token_type', data.token_type);
+                await storage.set('access_token', data.access_token);
+                await storage.set('token_type', data.token_type);
                 
                 // Get additional user data direct to target
                 try {
@@ -161,8 +163,8 @@ import Layout from '../layouts/Layout.astro';
                     });
                     if (profileRes.ok) {
                         const profileData = await profileRes.json();
-                        localStorage.setItem('full_name', (profileData.full_name || '').trim());
-                        localStorage.setItem('photo_path', profileData.photo_path || '');
+                        await storage.set('full_name', (profileData.full_name || '').trim());
+                        await storage.set('photo_path', profileData.photo_path || '');
                     }
                 } catch (e) {
                     console.error('Failed to fetch profile:', e);

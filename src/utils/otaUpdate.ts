@@ -1,5 +1,6 @@
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { APP_VERSION, OTA_UPDATE_URL } from './constants';
+import { storage } from './storage';
 
 export async function checkForUpdates() {
     try {
@@ -19,8 +20,8 @@ export async function checkForUpdates() {
         const serverVersion = serverData.version;
 
         // 2. Bandingkan versi
-        // Kita simpan versi saat ini di localStorage agar bisa dilacak setelah update OTA
-        const currentLocalVersion = localStorage.getItem('ota_current_version') || APP_VERSION;
+        // Kita simpan versi saat ini di storage agar bisa dilacak setelah update OTA
+        const currentLocalVersion = await storage.get('ota_current_version') || APP_VERSION;
 
         console.log(`[OTA] Local: ${currentLocalVersion}, Server: ${serverVersion}`);
 
@@ -38,8 +39,8 @@ export async function checkForUpdates() {
             // 4. Terapkan update
             await CapacitorUpdater.set(update);
 
-            // Simpan version baru ke localStorage
-            localStorage.setItem('ota_current_version', serverVersion);
+            // Simpan version baru ke storage
+            await storage.set('ota_current_version', serverVersion);
 
             console.log('[OTA] Update applied. Reloading app...');
 

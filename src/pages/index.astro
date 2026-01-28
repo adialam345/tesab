@@ -51,7 +51,17 @@ import Layout from '../layouts/Layout.astro';
 
 <script>
     import { checkForUpdates } from '../utils/otaUpdate';
+    import { storage } from '../utils/storage';
     
-    // Jalankan pengecekan update saat aplikasi pertama kali dimuat
+    // 1. Jalankan pengecekan update
     checkForUpdates();
+
+    // 2. Auto-login Check
+    (async () => {
+        const token = await storage.get('access_token');
+        if (token) {
+            console.log('Sesi ditemukan, mengalihkan ke Dashboard...');
+            window.location.href = 'absensi.html';
+        }
+    })();
 </script>

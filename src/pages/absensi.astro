@@ -36,6 +36,7 @@ import UserHeader from '../components/UserHeader.astro';
     import { updateButtonStates, handleAttendanceSubmission } from '../utils/attendanceLogic';
     import { processPhoto, runCaptureSequence } from '../utils/photoProcessor';
     import { updateFaceDetection, setAutoCapturing } from '../utils/faceDetectionLoop';
+    import { storage } from '../utils/storage';
 
     const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
 
@@ -51,7 +52,7 @@ import UserHeader from '../components/UserHeader.astro';
         hasBreakIn: false,
         isBreakIn: false,
         isBreakOut: false,
-        token: localStorage.getItem('access_token')
+        token: null as string | null
     };
 
     const ui = {
@@ -73,7 +74,7 @@ import UserHeader from '../components/UserHeader.astro';
         breakOutBtn: document.getElementById('breakOutBtn') as HTMLButtonElement
     };
 
-    if (!state.token) window.location.href = '/login';
+    // if (!state.token) window.location.href = '/login'; // Moved inside async init
 
     // Event Listeners
     ui.captureBtn?.addEventListener('click', () => {
@@ -156,23 +157,30 @@ import UserHeader from '../components/UserHeader.astro';
         }
     });
 
-    document.getElementById('logoutBtn')?.addEventListener('click', () => {
-        localStorage.clear();
-        window.location.href = '/login';
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+        await storage.clear();
+        window.location.href = 'login.html';
     });
 
     // Initialization
     (async () => {
         console.log('Starting Dashboard Initialization...');
         
+        // 0. Load Token First
+        state.token = await storage.get('access_token');
+        if (!state.token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
         // 1. Setup User Profile
         const userNameEl = document.getElementById('userName');
         if (userNameEl) {
-            const fullName = localStorage.getItem('full_name');
+            const fullName = await storage.get('full_name');
             userNameEl.textContent = fullName ? fullName.trim() : 'Pegawai Kinerja';
         }
 
-        const photoPath = localStorage.getItem('photo_path');
+        const photoPath = await storage.get('photo_path');
         if (photoPath) {
             const userPhoto = document.getElementById('userPhoto') as HTMLImageElement;
             const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
