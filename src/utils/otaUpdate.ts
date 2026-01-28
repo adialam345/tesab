@@ -26,29 +26,31 @@ export async function checkForUpdates() {
         console.log(`[OTA] Local: ${currentLocalVersion}, Server: ${serverVersion}`);
 
         if (serverVersion !== currentLocalVersion) {
-            console.log('[OTA] New version available! Downloading...');
+            console.log(`[OTA] New version available: ${serverVersion}. Downloading...`);
 
-            // 3. Download ZIP dari VPS
+            // 3. Download ZIP dari VPS dengan cache-busting query param
             const update = await CapacitorUpdater.download({
-                url: `${OTA_UPDATE_URL}/dist.zip`,
+                url: `${OTA_UPDATE_URL}/dist.zip?t=${new Date().getTime()}`,
                 version: serverVersion,
             });
 
-            console.log('[OTA] Download complete. Applying update...');
+            console.log('[OTA] Download complete. Applying update Bundle ID:', update.id);
 
             // 4. Terapkan update
             await CapacitorUpdater.set(update);
 
-            // Simpan version baru ke storage
+            // Simpan version baru ke storage (supaya tidak download ulang)
             await storage.set('ota_current_version', serverVersion);
 
-            console.log('[OTA] Update applied. Reloading app...');
+            console.log('[OTA] Update applied successfully. Refreshing page...');
 
-            // Opsional: Beritahu user sebelum reload
-            // alert('Aplikasi telah diperbarui ke versi baru!');
-            window.location.reload();
+            // Beritahu user sebelum reload agar mereka tahu ini sedang update
+            alert(`Aplikasi diperbarui ke v${serverVersion}. Memuat ulang...`);
+
+            // Reload ke index untuk memastikan asset baru dimuat
+            window.location.href = 'index.html';
         } else {
-            console.log('[OTA] App is up to date.');
+            console.log('[OTA] App is already at the latest version:', currentLocalVersion);
         }
     } catch (error) {
         console.error('[OTA] Error checking for updates:', error);

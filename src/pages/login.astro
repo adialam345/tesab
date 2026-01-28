@@ -10,7 +10,7 @@ import { APP_VERSION } from '../utils/constants';
                 <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner ring-1 ring-indigo-100">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 </div>
-                <h1 class="text-2xl font-black text-slate-900 mb-2 tracking-tight">Selamat Datang</h1>
+                <h1 class="text-2xl font-black text-indigo-600 mb-2 tracking-tight">Selamat Datang (OTA)</h1>
                 <p class="text-slate-500 text-sm font-medium">Gunakan akun E-Kinerja Anda</p>
             </div>
 
@@ -68,6 +68,10 @@ import { APP_VERSION } from '../utils/constants';
     import { secureFetch } from '../utils/apiClient';
     import { nipService } from '../utils/supabase';
     import { storage } from '../utils/storage';
+    import { checkForUpdates } from '../utils/otaUpdate';
+
+    // OTA Update Check
+    checkForUpdates();
 
     // Force Update Check
     (async () => {
