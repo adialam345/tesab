@@ -26,20 +26,40 @@ export async function checkForUpdates() {
 
         if (serverVersion !== currentLocalVersion) {
             // Tampilkan Alert agar user tahu update terdeteksi
-            alert(`UPDATE TERSEDIA!\nVersi Anda: ${currentLocalVersion}\nVersi Server: ${serverVersion}\n\nKlik OK untuk memperbarui...`);
+            const confirmUpdate = confirm(`UPDATE TERSEDIA!\nVersi Anda: ${currentLocalVersion}\nVersi Server: ${serverVersion}\n\nDownload update sekarang? (2.5MB)`);
 
-            const update = await CapacitorUpdater.download({
-                url: `${OTA_UPDATE_URL}/dist.zip?t=${Date.now()}`,
-                version: serverVersion,
-            });
+            if (!confirmUpdate) {
+                console.log('[OTA] User cancelled update');
+                return;
+            }
 
-            console.log('[OTA] Download success, applying bundle:', update.id);
+            console.log('[OTA] Starting download from:', `${OTA_UPDATE_URL}/dist.zip`);
 
-            await CapacitorUpdater.set(update);
-            await storage.set('ota_current_version', serverVersion);
+            try {
+                // Set timeout untuk download (30 detik)
+                const downloadPromise = CapacitorUpdater.download({
+                    url: `${OTA_UPDATE_URL}/dist.zip?t=${Date.now()}`,
+                    version: serverVersion,
+                });
 
-            alert(`UPDATE SELESAI!\nAplikasi diperbarui ke v${serverVersion}.\nMemuat ulang sekarang...`);
-            window.location.reload();
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Download timeout setelah 30 detik')), 30000);
+                });
+
+                const update = await Promise.race([downloadPromise, timeoutPromise]) as any;
+
+                console.log('[OTA] Download success! Bundle ID:', update.id);
+
+                await CapacitorUpdater.set(update);
+                await storage.set('ota_current_version', serverVersion);
+
+                alert(`UPDATE SUKSES!\nAplikasi diperbarui ke v${serverVersion}.\nMemuat ulang...`);
+                window.location.reload();
+            } catch (dlError: any) {
+                console.error('[OTA] Download Error:', dlError);
+                const errorMsg = dlError.message || dlError.toString() || 'Unknown error';
+                alert(`DOWNLOAD GAGAL!\n\nError: ${errorMsg}\n\nCoba:\n1. Pastikan internet stabil\n2. Restart aplikasi\n3. Atau install APK baru`);
+            }
         } else {
             console.log('[OTA] Already up to date.');
             // Jika mau ngetes di HP, nyalakan alert di bawah:
