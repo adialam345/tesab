@@ -31,15 +31,16 @@ const { title = "AbsenTech - Sistem Absensi Modern" } = Astro.props;
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 		<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-		<script is:inline>
+		<!-- Service Worker DISABLED for OTA compatibility -->
+		<!-- <script is:inline>
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', () => {
-					navigator.serviceWorker.register('/sw.js', { scope: '/' })
+					navigator.serviceWorker.register('./sw.js', { scope: './' })
 						.then(reg => console.log('SW registered'))
 						.catch(err => console.error('SW error:', err));
 				});
 			}
-		</script>
+		</script> -->
 	</head>
 
 	<body class="bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',_sans-serif] min-h-screen">

@@ -36,6 +36,26 @@ export async function initOtaSystem() {
     }
 }
 
+// Reset ke bundle bawaan APK (untuk recovery dari OTA rusak)
+export async function resetToBuiltin() {
+    try {
+        const updater = getUpdater();
+        if (!updater) {
+            alert('Plugin tidak tersedia');
+            return;
+        }
+
+        await storage.remove(CURRENT_VERSION_KEY);
+        await storage.remove(PENDING_VERSION_KEY);
+        await updater.reset();
+        alert('Reset berhasil! Aplikasi akan reload ke versi bawaan APK...');
+        window.location.reload();
+    } catch (error) {
+        console.error('[OTA] Reset error:', error);
+        alert('Reset gagal: ' + error);
+    }
+}
+
 export async function checkForUpdates() {
     try {
         const updater = getUpdater();

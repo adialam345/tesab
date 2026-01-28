@@ -14,12 +14,9 @@ const config: CapacitorConfig = {
     plugins: {
         CapacitorHttp: {
             enabled: true
-        },
-        CapacitorUpdater: {
-            autoUpdate: false,
-            resetWhenUpdate: true,
-            updateUrl: 'https://antarixa.qzz.io/ota/version.json'
         }
+        // CapacitorUpdater DISABLED - OTA tidak kompatibel dengan setup ini
+        // Gunakan build APK baru untuk setiap update
     }
 };
 

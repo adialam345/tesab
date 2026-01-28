@@ -41,6 +41,26 @@ if (!(Test-Path "dist/index.html")) {
     exit
 }
 
+# 4.5 Fix Absolute Paths (Use ./ prefix for Capacitor/OTA compatibility)
+Write-Host "4.5 Fixing asset paths (making them relative with ./)..." -ForegroundColor Yellow
+$htmlFiles = Get-ChildItem -Path "dist" -Filter "*.html" -Recurse
+foreach ($file in $htmlFiles) {
+    (Get-Content $file.FullName -Raw) `
+        -replace 'href="/', 'href="./' `
+        -replace 'src="/', 'src="./' `
+        -replace 'href="_astro/', 'href="./_astro/' `
+        -replace 'src="_astro/', 'src="./_astro/' `
+        | Set-Content $file.FullName -NoNewline
+}
+# Also fix any JS files that might reference absolute paths
+$jsFiles = Get-ChildItem -Path "dist/_astro" -Filter "*.js" -Recurse -ErrorAction SilentlyContinue
+foreach ($file in $jsFiles) {
+    (Get-Content $file.FullName -Raw) `
+        -replace '\"/_astro/', '"./_astro/' `
+        -replace '''/_astro/', '''./_astro/' `
+        | Set-Content $file.FullName -NoNewline
+}
+
 # 5. Create version.json
 Write-Host "4. Creating version.json..."
 $JSON_CONTENT = '{"version": "' + $NEW_VERSION + '"}'
