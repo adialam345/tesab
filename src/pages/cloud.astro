@@ -1,0 +1,107 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Cloud Discovery - AbsenTech">
+	<main class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+		<div class="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-8 border border-slate-100 relative overflow-hidden">
+            <!-- Decorative Background -->
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
+            
+            <div class="text-center mb-8 relative">
+                <div class="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-200 rotate-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a3.5 3.5 0 0 0 0-7c-.3 0-.6 0-.9.1a7 7 0 1 0-13.3 3.6 3.5 3.5 0 0 0 0 3.3"></path><path d="M12 10v4"></path><path d="M10 12h4"></path></svg>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Cloud Finder</h1>
+                <p class="text-slate-500 text-sm mt-2">Cari tahu Device ID Anda dari Cloud</p>
+            </div>
+
+            <div id="formContainer" class="space-y-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">NIP / Username</label>
+                        <input type="text" id="nip" placeholder="1995..." class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password E-Kinerja</label>
+                        <input type="password" id="password" placeholder="••••••••" class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all font-medium">
+                    </div>
+                </div>
+
+                <button id="findBtn" class="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-sm shadow-xl shadow-slate-200 transition-all active:scale-95 flex items-center justify-center gap-3">
+                    <span id="btnText">DAPATKAN DEVICE ID</span>
+                </button>
+
+                <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3">
+                    <span class="text-blue-500 text-lg">ℹ️</span>
+                    <p class="text-blue-700 text-[10px] leading-relaxed">System akan mencoba login ke server resmi secara virtual untuk menangkap ID perangkat yang terdaftar di akun Anda.</p>
+                </div>
+            </div>
+
+            <!-- Result View (Hidden by default) -->
+            <div id="resultContainer" class="hidden space-y-6 pt-4 text-center">
+                <div class="p-6 bg-emerald-50 rounded-3xl border border-emerald-100 inline-block w-full">
+                    <p class="text-emerald-600 text-xs font-bold uppercase tracking-widest mb-2">Perangkat Ditemukan!</p>
+                    <div id="deviceIdDisplay" class="text-4xl font-black text-emerald-700 tracking-tighter tabular-nums mb-4">DEV-XXXXXX</div>
+                    <button id="copyBtn" class="px-6 py-2 bg-emerald-600 text-white rounded-full text-[10px] font-black active:scale-90 transition-all">SALIN KODE</button>
+                </div>
+                
+                <p class="text-slate-400 text-[10px] px-4">Masukkan kode di atas ke aplikasi AbsenTech pada bagian <b>"Samakan ID Chrome"</b></p>
+                
+                <button onclick="location.reload()" class="text-indigo-600 text-[11px] font-black hover:underline uppercase">Ulangi Pencarian</button>
+            </div>
+		</div>
+	</main>
+</Layout>
+
+<script>
+    const findBtn = document.getElementById('findBtn');
+    const nipInput = document.getElementById('nip') as HTMLInputElement;
+    const passInput = document.getElementById('password') as HTMLInputElement;
+    const btnText = document.getElementById('btnText');
+    const formContainer = document.getElementById('formContainer');
+    const resultContainer = document.getElementById('resultContainer');
+    const deviceIdDisplay = document.getElementById('deviceIdDisplay');
+    const copyBtn = document.getElementById('copyBtn');
+
+    findBtn?.addEventListener('click', async () => {
+        if (!nipInput.value || !passInput.value) return alert('Isi NIP & Password!');
+
+        findBtn.setAttribute('disabled', 'true');
+        btnText!.textContent = 'MENGHUBUNGI CLOUD...';
+
+        try {
+            const formData = new FormData();
+            formData.append('username', nipInput.value);
+            formData.append('password', passInput.value);
+
+            const response = await fetch('/api/cloud-auth', {
+                method: 'POST',
+                body: formData
+            });
+
+            const res = await response.json();
+
+            if (res.capturedId) {
+                // Berhasil menangkap ID
+                deviceIdDisplay!.textContent = res.capturedId;
+                formContainer?.classList.add('hidden');
+                resultContainer?.classList.remove('hidden');
+            } else if (res.success) {
+                alert('Berhasil Login! Tapi ID tidak terbaca. Perangkat Anda mungkin belum terkunci.');
+            } else {
+                alert('Gagal: ' + res.message);
+            }
+        } catch(e) {
+            alert('Terjadi kesalahan jaringan.');
+        } finally {
+            findBtn.removeAttribute('disabled');
+            btnText!.textContent = 'DAPATKAN DEVICE ID';
+        }
+    });
+
+    copyBtn?.addEventListener('click', () => {
+        navigator.clipboard.writeText(deviceIdDisplay!.textContent || '');
+        alert('Kopi Berhasil!');
+    });
+</script>

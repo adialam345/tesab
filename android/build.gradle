@@ -24,6 +24,26 @@ allprojects {
     }
 }
 
+// Force Java 17 for all subprojects (including Capacitor)
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_17
+                    targetCompatibility = JavaVersion.VERSION_17
+                }
+            }
+        }
+    }
+    
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        // DO NOT use options.release with Android Gradle Plugin
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

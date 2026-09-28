@@ -1,0 +1,225 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Direct Sync - AbsenTech Portal">
+    <main class="min-h-screen bg-[#0f172a] text-white flex items-center justify-center p-6 overflow-hidden relative">
+        <!-- Animated Background Effects -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse"></div>
+            <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600/20 rounded-full blur-[120px] animate-pulse" style="animation-delay: 2s;"></div>
+        </div>
+
+        <div class="max-w-md w-full relative z-10">
+            <div class="bg-white/5 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-8 sm:p-10 shadow-2xl">
+                <!-- Header -->
+                <div class="text-center mb-10">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-indigo-500/20 rotate-3 animate-bounce-slow">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                    </div>
+                    <h1 class="text-3xl font-black tracking-tight mb-2 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">Magic Sync Portal</h1>
+                    <p class="text-slate-400 text-sm font-medium">Sinkronisasi ID Chrome ke Aplikasi Otomatis</p>
+                </div>
+
+                <!-- Input NIP -->
+                <div id="step1" class="space-y-6">
+                    <div class="relative group">
+                        <label class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-2 block ml-1">Masukkan NIP Pegawai</label>
+                        <input type="text" id="nipInput" placeholder="1995..." class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/10 transition-all text-center text-lg">
+                    </div>
+
+                    <button id="startSyncBtn" class="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-sm shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3">
+                        MULAI SINKRONISASI
+                    </button>
+
+                    <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-3">
+                        <span class="text-amber-500 text-lg">💡</span>
+                        <p class="text-amber-200/80 text-[10px] leading-relaxed font-medium">Pastikan Anda membuka halaman ini di browser <b>Chrome</b> (di perangkat yang sama dengan e-kinerja).</p>
+                    </div>
+                </div>
+
+                <!-- Syncing Controls -->
+                <div id="step2" class="hidden space-y-6">
+                    <div class="text-center p-8 bg-white/5 rounded-3xl border border-white/10 relative overflow-hidden">
+                        <div id="statusDot" class="absolute top-4 right-4 w-2 h-2 bg-rose-500 rounded-full animate-ping"></div>
+                        <p id="statusText" class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">Menunggu Data Chrome...</p>
+                        
+                        <div class="py-4">
+                            <div class="w-16 h-16 border-4 border-white/5 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
+                        </div>
+
+                        <p class="text-slate-400 text-[11px] leading-relaxed px-4 mt-4">
+                            Sistem sedang menunggu data dari sistem resmi Labuhanbatu.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button id="guideBtn" class="w-full py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            Cara Paksa Kirim Data
+                        </button>
+                        <button onclick="location.reload()" class="w-full py-4 text-slate-500 font-bold text-[10px] uppercase tracking-widest hover:text-white transition-all">Batal & Ulangi</button>
+                    </div>
+                </div>
+
+                <!-- Success State -->
+                <div id="step3" class="hidden text-center space-y-6">
+                    <div class="w-24 h-24 bg-emerald-500/20 text-emerald-500 rounded-full mx-auto flex items-center justify-center animate-bounce-slow">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black text-white">SINKRON BERHASIL!</h2>
+                        <p class="text-emerald-400 text-xs font-bold mt-1 uppercase tracking-widest">ID Telah Terkirim ke Cloud</p>
+                    </div>
+                    <div class="p-6 bg-white/5 rounded-3xl border border-white/10">
+                        <p class="text-slate-400 text-[10px] mb-2 uppercase font-black">ID ANDA:</p>
+                        <p id="capturedId" class="text-3xl font-black text-white tabular-nums tracking-tighter">DEV-XXXXXX</p>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        Silakan kembali ke <b>Aplikasi AbsenTech</b>. Aplikasi akan mendeteksi ID ini secara otomatis.
+                    </p>
+                    <button onclick="location.reload()" class="w-full py-4 bg-white/10 text-white rounded-2xl font-bold text-xs">Sync Perangkat Lain</button>
+                </div>
+            </div>
+            
+            <p class="mt-8 text-center text-slate-600 text-[10px] font-bold uppercase tracking-[0.3em]">AbsenTech Magic Sync v3.0</p>
+        </div>
+
+        <!-- Modal Panduan -->
+        <div id="guideModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/95 backdrop-blur-xl">
+            <div class="max-w-sm w-full bg-[#1e293b] rounded-[2.5rem] p-8 border border-white/10 shadow-2xl relative">
+                <button id="closeGuide" class="absolute top-6 right-6 text-slate-400 hover:text-white">&times;</button>
+                <h3 class="text-xl font-black text-white mb-6">Cara Kirim Data:</h3>
+                <div class="space-y-4">
+                    <div class="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div class="w-8 h-8 bg-indigo-500 text-white rounded-lg flex items-center justify-center font-black flex-shrink-0 text-sm">1</div>
+                        <p class="text-slate-300 text-[11px] leading-relaxed">Login ke <b>e-Kinerja</b> di tab lain browser ini.</p>
+                    </div>
+                    <div class="flex gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div class="w-8 h-8 bg-indigo-500 text-white rounded-lg flex items-center justify-center font-black flex-shrink-0 text-sm">2</div>
+                        <p class="text-slate-300 text-[11px] leading-relaxed">Ketik <code class="bg-slate-800 px-1 rounded text-indigo-400">sync</code> di URL bar dan pilih bookmark "Magic Sync".</p>
+                    </div>
+                    <div class="flex gap-4 p-4 bg-indigo-500/20 border border-indigo-500/40 rounded-2xl">
+                        <div class="w-8 h-8 bg-indigo-500 text-white rounded-lg flex items-center justify-center font-black flex-shrink-0 text-sm">3</div>
+                        <p class="text-white text-[11px] leading-relaxed font-bold">Data akan otomatis terbang ke halaman ini dan ke Cloud.</p>
+                    </div>
+                </div>
+                <button id="copyBookmarkBtn" class="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm">SALIN KODE BOOKMARK</button>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(0) rotate(3deg); }
+        50% { transform: translateY(-10px) rotate(5deg); }
+    }
+    .animate-bounce-slow {
+        animation: bounce-slow 4s ease-in-out infinite;
+    }
+</style>
+
+<script>
+    import { sessionService } from '../utils/supabase';
+
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    const nipInput = document.getElementById('nipInput') as HTMLInputElement;
+    const startSyncBtn = document.getElementById('startSyncBtn');
+    const capturedId = document.getElementById('capturedId');
+    const statusText = document.getElementById('statusText');
+    const statusDot = document.getElementById('statusDot');
+
+    const guideModal = document.getElementById('guideModal');
+    const guideBtn = document.getElementById('guideBtn');
+    const closeGuide = document.getElementById('closeGuide');
+    const copyBookmarkBtn = document.getElementById('copyBookmarkBtn');
+
+    let currentNip = '';
+    let pollInterval: any = null;
+
+    startSyncBtn?.addEventListener('click', () => {
+        currentNip = nipInput.value.trim();
+        if (!currentNip) return alert('Masukkan NIP Anda!');
+
+        step1?.classList.add('hidden');
+        step2?.classList.remove('hidden');
+
+        // Buka web resmi di tab baru agar user bisa login/refresh
+        window.open('https://absensi-kinerja.labuhanbatuselatankab.go.id/login', '_blank');
+
+        startPolling();
+    });
+
+    function startPolling() {
+        if (pollInterval) clearInterval(pollInterval);
+        
+        pollInterval = setInterval(async () => {
+            try {
+                // Ambil session dari Supabase untuk NIP ini
+                // Kita gunakan data yang diupdate dalam 2 menit terakhir
+                const session = await sessionService.getByNip(currentNip);
+                
+                if (session && session.device_id) {
+                    const updatedAt = new Date(session.updated_at).getTime();
+                    const now = new Date().getTime();
+                    
+                    // Jika data baru (kurang dari 5 menit yang lalu)
+                    if (now - updatedAt < 300000) {
+                        clearInterval(pollInterval);
+                        showSuccess(session.device_id);
+                    }
+                }
+            } catch (e) { console.error('Polling error:', e); }
+        }, 3000);
+
+        // Timeout setelah 10 menit
+        setTimeout(() => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                statusText!.textContent = 'Pencarian Berhenti (Timeout)';
+                statusDot?.classList.replace('bg-rose-500', 'bg-slate-500');
+            }
+        }, 600000);
+    }
+
+    function showSuccess(id: string) {
+        step2?.classList.add('hidden');
+        step3?.classList.remove('hidden');
+        capturedId!.textContent = id;
+    }
+
+    // Modal & Bookmark Logic
+    guideBtn?.addEventListener('click', () => guideModal?.classList.remove('hidden'));
+    closeGuide?.addEventListener('click', () => guideModal?.classList.add('hidden'));
+    copyBookmarkBtn?.addEventListener('click', async () => {
+        const script = `javascript:(function(){
+            const t = localStorage.getItem('token');
+            const d = localStorage.getItem('X-Device-ID');
+            const n = '${currentNip}';
+            const name = localStorage.getItem('full_name') || '';
+            
+            if(!d) return alert('GAGAL: Device ID tidak ditemukan. Pastikan Anda sudah masuk ke DASHBOARD e-Kinerja.');
+            
+            fetch('https://aiyslkzvbzznfavpllwo.supabase.co/rest/v1/user_sessions?on_conflict=nip', {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'apikey': 'sb_publishable_pQS5NZWik_abrK6jOqPDgw_4OHRbQWH',
+                    'Authorization': 'Bearer sb_publishable_pQS5NZWik_abrK6jOqPDgw_4OHRbQWH',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nip: n, device_id: d, token: t || '', full_name: name, updated_at: new Date().toISOString() })
+            }).then(() => alert('Sakti! Data berhasil terkirim ke Cloud. Silakan kembali ke halaman Portal Sync.'))
+            .catch(e => alert('Error Cloud: ' + e.message));
+        })()`;
+
+        try {
+            await navigator.clipboard.writeText(script);
+            copyBookmarkBtn!.textContent = '✓ BERHASIL DISALIN';
+            setTimeout(() => { copyBookmarkBtn!.textContent = 'SALIN KODE BOOKMARK'; }, 2000);
+        } catch (e) { alert('Gagal salin otomatis. Silakan salin manual kode tersebut.'); }
+    });
+</script>

@@ -22,3 +22,38 @@ import { APP_VERSION } from '../utils/constants';
         </button>
     </div>
 </header>
+
+<script>
+    import { storage } from '../utils/storage';
+    import { TARGET_BASE_URL } from '../utils/constants';
+
+    (async () => {
+        // Load User Name
+        const userName = await storage.get('full_name');
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl && userName) {
+            userNameEl.textContent = userName;
+        }
+
+        // Load Photo
+        const photoPath = await storage.get('photo_path');
+        const userPhoto = document.getElementById('userPhoto') as HTMLImageElement;
+        const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
+        
+        if (photoPath && userPhoto && userPhotoPlaceholder) {
+            const finalUrl = photoPath.startsWith('http') ? photoPath : `${TARGET_BASE_URL}${photoPath}`;
+            userPhoto.src = finalUrl;
+            
+            userPhoto.onload = () => {
+                userPhoto.classList.remove('hidden');
+                userPhotoPlaceholder.classList.add('hidden');
+            };
+
+            userPhoto.onerror = () => {
+                console.warn('Header photo failed to load, keeping placeholder');
+                userPhoto.classList.add('hidden');
+                userPhotoPlaceholder.classList.remove('hidden');
+            };
+        }
+    })();
+</script>

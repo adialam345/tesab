@@ -45,6 +45,12 @@ const { title = "AbsenTech - Sistem Absensi Modern" } = Astro.props;
 
 	<body class="bg-slate-50 text-slate-900 font-['Plus_Jakarta_Sans',_sans-serif] min-h-screen">
 		<slot />
+
+		<script>
+			import { initAppUpdater } from '../utils/appUpdater';
+			// Check for updates on every page load
+			initAppUpdater();
+		</script>
 	</body>
 </html>
 

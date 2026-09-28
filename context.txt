@@ -1,0 +1,5 @@
+ hari ini.
+                            </p>
+                        </div>
+                    `,icon:"warning",showCancelButton:!0,confirmButtonColor:"#ef4444",cancelButtonColor:"#64748b",confirmButtonText:"Ya, Saya Pulang",cancelButtonText:"Batal / Salah Pijit"})).isConfirmed)return;F(ye),w(!0);return}if(y(!0),!Re?.photo){y(!1),wt.fire("Gagal","Foto tidak terambil dengan benar. Silakan coba lagi.","error");return}try{const Ee=await bt.post(`${St.API_URL}/attendance/${ye}`,{lat:t.lat,lng:t.lng,device_id:localStorage.getItem("X-Device-ID")||navigator.userAgent,photo_base64:Re.photo,face_embedding:Re.embedding||null,is_mock_location:c||i,location_accuracy:r},{timeout:45e3}),Ve={"check-in":"Masuk","break-out":"Keluar Istirahat","break-in":"Kembali Is.","check-out":"Pulang"},He={"check-in":Ee.data.clock_in,"break-out":Ee.data.break_out,"break-in":Ee.data.break_in,"check-out":Ee.data.clock_out}[ye];wt.fire({icon:"success",title:`Absen ${Ve[ye]} Berhasil`,html:`
+                    <div cla

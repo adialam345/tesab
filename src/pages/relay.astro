@@ -1,0 +1,198 @@
+---
+// relay.astro — Halaman jembatan untuk auto-capture sesi dari web resmi
+---
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sinkronisasi Akun...</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            background: #0f172a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 28px;
+            padding: 40px 32px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .icon { font-size: 64px; margin-bottom: 20px; }
+        h1 { font-size: 22px; font-weight: 900; margin-bottom: 10px; color: #f8fafc; }
+        p { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+        .status {
+            margin-top: 24px;
+            padding: 16px;
+            background: #0f172a;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            font-family: monospace;
+        }
+        .success { color: #22c55e !important; }
+        .error-text { color: #ef4444 !important; }
+        .btn {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 16px;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #4f46e5; }
+        .btn.gray { background: #334155; margin-top: 10px; }
+        .spin {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #334155;
+            border-top-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="spinner" class="spin"></div>
+        <h1 id="title">Mengambil Data...</h1>
+        <p id="desc">Sedang mencoba ambil sesi aktif dari browser. Harap tunggu...</p>
+        <div id="status" class="status">Memulai sinkronisasi...</div>
+        <div id="actions" style="display:none;"></div>
+    </div>
+
+<script define:vars={{ SUPABASE_URL: 'https://aiyslkzvbzznfavpllwo.supabase.co', SUPABASE_KEY: 'sb_publishable_pQS5NZWik_abrK6jOqPDgw_4OHRbQWH', OFFICIAL_URL: 'https://absensi-kinerja.labuhanbatuselatankab.go.id' }}>
+    const setStatus = (msg, type = '') => {
+        const el = document.getElementById('status');
+        el.textContent = msg;
+        el.className = 'status ' + type;
+    };
+
+    const setSuccess = () => {
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('title').textContent = 'SINKRONISASI BERHASIL!';
+        document.getElementById('desc').textContent = 'Data akun berhasil disimpan ke Cloud. Kembali ke aplikasi dan klik "Sync dari Cloud".';
+        
+        const actions = document.getElementById('actions');
+        actions.style.display = 'block';
+        actions.innerHTML = '<button class="btn" onclick="tryReturnToApp()">Kembali ke Aplikasi</button>';
+    };
+
+    const setError = (msg) => {
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('title').textContent = 'Sesi Tidak Ditemukan';
+        document.getElementById('desc').textContent = msg;
+        
+        const actions = document.getElementById('actions');
+        actions.style.display = 'block';
+        actions.innerHTML = `
+            <a href="${OFFICIAL_URL}/login" class="btn">Buka & Login di Web Resmi Dulu</a>
+            <button class="btn gray" onclick="location.reload()">Coba Ulang</button>
+        `;
+    };
+
+    function tryReturnToApp() {
+        // Coba deep link ke app (jika terdaftar)
+        window.location.href = 'intent://absentech.app/relay-done#Intent;scheme=https;end';
+        // Fallback: tutup tab ini
+        setTimeout(() => window.close(), 1000);
+    }
+
+    async function captureAndSync() {
+        setStatus('Memeriksa sesi login di browser ini...');
+        
+        // Cari token & device ID dari localStorage (jika user buka halaman ini dari tab yang sama dengan web resmi)
+        const token = localStorage.getItem('token') 
+            || localStorage.getItem('access_token')
+            || localStorage.getItem('accessToken');
+        
+        const deviceId = localStorage.getItem('X-Device-ID')
+            || localStorage.getItem('fixed_device_id')
+            || localStorage.getItem('deviceId');
+        
+        const nip = localStorage.getItem('username')
+            || localStorage.getItem('nip')
+            || localStorage.getItem('user_nip');
+        
+        const fullName = localStorage.getItem('full_name')
+            || localStorage.getItem('fullName')
+            || localStorage.getItem('name')
+            || '';
+
+        // Cek URL params juga (mungkin di-pass via redirect)
+        const params = new URLSearchParams(window.location.search);
+        const tokenParam = params.get('token');
+        const nipParam = params.get('nip');
+        const deviceParam = params.get('device_id');
+
+        const finalToken = tokenParam || token;
+        const finalNip = nipParam || nip;
+        const finalDevice = deviceParam || deviceId;
+
+        setStatus(`Token: ${finalToken ? '✓ Ditemukan' : '✗ Tidak ada'} | NIP: ${finalNip || '?'} | Device: ${finalDevice ? '✓' : '✗'}`);
+
+        if (!finalToken) {
+            setTimeout(() => setError('Anda belum login di web resmi. Buka web resmi terlebih dahulu, lakukan login, baru buka halaman ini kembali.'), 800);
+            return;
+        }
+
+        // Push ke Supabase
+        setStatus('Menyimpan data ke Cloud...');
+        try {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/user_sessions?on_conflict=nip`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates'
+                },
+                body: JSON.stringify({
+                    nip: finalNip || prompt('Masukkan NIP Anda:') || 'unknown',
+                    device_id: finalDevice || '',
+                    token: finalToken,
+                    full_name: fullName,
+                    updated_at: new Date().toISOString()
+                })
+            });
+
+            if (res.ok || res.status === 201) {
+                setStatus('✓ Berhasil disimpan ke Cloud!', 'success');
+                setSuccess();
+            } else {
+                const err = await res.text();
+                setStatus('Gagal upload: ' + err, 'error-text');
+                setError(`Upload ke cloud gagal (${res.status}). Coba ulang.`);
+            }
+        } catch (e) {
+            setError('Koneksi ke cloud gagal: ' + e.message);
+        }
+    }
+
+    // Mulai saat halaman terbuka
+    captureAndSync();
+</script>
+</body>
+</html>

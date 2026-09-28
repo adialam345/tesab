@@ -1,4 +1,13 @@
+import { storage } from './storage';
 import { getRandomOffset, submitCheckIn, submitCheckOut, submitBreakIn, submitBreakOut } from './location';
+
+function setBtnText(btn: HTMLButtonElement, textSpan: HTMLElement | null, text: string) {
+    if (textSpan) {
+        textSpan.textContent = text;
+    } else {
+        btn.textContent = text;
+    }
+}
 
 export function updateButtonStates(ui: any, state: any) {
     console.log('Updating button states...', {
@@ -17,44 +26,60 @@ export function updateButtonStates(ui: any, state: any) {
         return;
     }
 
-    // 1. Check In / Out Button Logic
-    if (state.hasCheckedIn && state.hasCheckedOut) {
-        ui.checkInBtn.disabled = true;
-        ui.checkInBtn.textContent = 'Sudah Absen Hari Ini';
-        ui.checkInBtn.className = ui.checkInBtn.className.replace('bg-rose-600', 'bg-slate-400');
-    } else if (state.hasCheckedIn) {
-        ui.checkInBtn.disabled = false;
-        ui.checkInBtn.textContent = 'Kirim Check-Out';
-        ui.checkInBtn.classList.replace('bg-indigo-600', 'bg-rose-600');
-    } else {
-        ui.checkInBtn.disabled = false;
-        ui.checkInBtn.textContent = 'Kirim Absensi';
-        if (ui.checkInBtn.classList.contains('bg-rose-600')) {
-            ui.checkInBtn.classList.replace('bg-rose-600', 'bg-indigo-600');
-        }
-    }
+    // Default: disable everything
+    ui.checkInBtn.disabled = true;
+    ui.breakInBtn.disabled = true;
+    ui.breakOutBtn.disabled = true;
 
-    // 2. Break Buttons Logic
-    if (state.hasCheckedIn && !state.hasCheckedOut) {
+    if (!state.hasCheckedIn) {
+        // Step 1: Check In
+        ui.checkInBtn.disabled = false;
+        setBtnText(ui.checkInBtn, ui.checkInBtnText, 'Masuk Kerja');
+        ui.checkInBtn.classList.remove('bg-rose-600', 'bg-slate-400');
+        ui.checkInBtn.classList.add('bg-indigo-600');
+
+        setBtnText(ui.breakOutBtn, ui.breakOutBtnText, 'Mulai Istirahat');
+        setBtnText(ui.breakInBtn, ui.breakInBtnText, 'Selesai Istirahat');
+    } else if (!state.hasCheckedOut) {
+        // Step 2-4: Flexible Check-Out or Breaks
+        ui.checkInBtn.disabled = false;
+        setBtnText(ui.checkInBtn, ui.checkInBtnText, 'Pulang Kerja');
+        ui.checkInBtn.classList.remove('bg-indigo-600', 'bg-slate-400');
+        ui.checkInBtn.classList.add('bg-rose-600');
+
+        // Break Out is available if not yet done
         if (!state.hasBreakOut) {
             ui.breakOutBtn.disabled = false;
-            ui.breakInBtn.disabled = true;
-        } else if (!state.hasBreakIn) {
-            ui.breakOutBtn.disabled = true;
-            ui.breakInBtn.disabled = false;
+            setBtnText(ui.breakOutBtn, ui.breakOutBtnText, 'Mulai Istirahat');
         } else {
+            setBtnText(ui.breakOutBtn, ui.breakOutBtnText, 'Sudah Istirahat');
             ui.breakOutBtn.disabled = true;
+        }
+
+        // Break In is available if Break Out is done but Break In is not
+        if (state.hasBreakOut && !state.hasBreakIn) {
+            ui.breakInBtn.disabled = false;
+            setBtnText(ui.breakInBtn, ui.breakInBtnText, 'Kembali Kerja');
+        } else if (state.hasBreakIn) {
+            setBtnText(ui.breakInBtn, ui.breakInBtnText, 'Sudah Kembali');
             ui.breakInBtn.disabled = true;
-            ui.breakOutBtn.textContent = 'Selesai Istirahat';
-            ui.breakInBtn.textContent = 'Selesai Istirahat';
+        } else {
+            setBtnText(ui.breakInBtn, ui.breakInBtnText, 'Selesai Istirahat');
+            ui.breakInBtn.disabled = true;
         }
     } else {
-        ui.breakInBtn.disabled = true;
-        ui.breakOutBtn.disabled = true;
+        // Final state: All Done
+        ui.checkInBtn.disabled = true;
+        setBtnText(ui.checkInBtn, ui.checkInBtnText, 'Sudah Absen Hari Ini');
+        ui.checkInBtn.classList.remove('bg-indigo-600', 'bg-rose-600');
+        ui.checkInBtn.classList.add('bg-slate-400');
+
+        setBtnText(ui.breakOutBtn, ui.breakOutBtnText, 'Selesai');
+        setBtnText(ui.breakInBtn, ui.breakInBtnText, 'Selesai');
     }
 }
 
-export async function handleAttendanceSubmission(type: 'check-in' | 'check-out' | 'break-in' | 'break-out', ui: any, state: any, USER_AGENT: string) {
+export async function handleAttendanceSubmission(type: 'check-in' | 'check-out' | 'break-in' | 'break-out', ui: any, state: any, deviceId?: string) {
     if (!state.targetLocation || !state.capturedPhoto || !ui.checkInStatus || !state.token) {
         console.log(`[${type}] Prerequisites not met. Aborting.`);
         return;
@@ -75,21 +100,31 @@ export async function handleAttendanceSubmission(type: 'check-in' | 'check-out' 
         'break-in': ui.breakInBtn,
         'break-out': ui.breakOutBtn
     };
+    const textSpanMap = {
+        'check-in': ui.checkInBtnText,
+        'check-out': ui.checkInBtnText,
+        'break-in': ui.breakInBtnText,
+        'break-out': ui.breakOutBtnText
+    };
+
     const currentBtn = btnMap[type];
+    const currentTextSpan = textSpanMap[type];
 
     ui.checkInBtn.disabled = true;
     ui.breakInBtn.disabled = true;
     ui.breakOutBtn.disabled = true;
 
-    currentBtn.textContent = 'Mengirim...';
+    setBtnText(currentBtn, currentTextSpan, 'Mengirim...');
 
     ui.checkInStatus.classList.remove('hidden');
     ui.checkInStatus.className = 'status-message info-text';
 
+    const realDeviceId = await storage.get('fixed_device_id') || deviceId || "";
+
     const payload = {
         lat: finalLat,
         lng: finalLng,
-        device_id: USER_AGENT,
+        device_id: realDeviceId,
         photo_base64: state.capturedPhoto,
         face_embedding: state.faceEmbedding,
         is_mock_location: false,
@@ -126,7 +161,7 @@ export async function handleAttendanceSubmission(type: 'check-in' | 'check-out' 
 
     if (!result.ok) {
         updateButtonStates(ui, state);
-        currentBtn.textContent = 'Coba Lagi';
+        setBtnText(currentBtn, currentTextSpan, 'Coba Lagi');
     } else {
         const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
@@ -166,6 +201,6 @@ export async function handleAttendanceSubmission(type: 'check-in' | 'check-out' 
         }
 
         updateButtonStates(ui, state);
-        currentBtn.textContent = 'Selesai';
+        setBtnText(currentBtn, currentTextSpan, 'Selesai');
     }
 }

@@ -15,7 +15,7 @@ import { APP_VERSION } from '../utils/constants';
             </div>
             
             <h1 class="text-3xl font-black text-slate-900 mb-3 tracking-tight">E-Absensi</h1>
-            <p class="text-slate-500 text-sm font-medium leading-relaxed mb-10 px-4">Solusi 12345 absensi modern dengan verifikasi biometrik dan lokasi yang presisi bagi tenaga kerja.</p>
+            <p class="text-slate-500 text-sm font-medium leading-relaxed mb-10 px-4">Solusi absensi modern dengan verifikasi biometrik dan lokasi yang presisi bagi tenaga kerja.</p>
             
             <a href="login.html" class="flex items-center justify-center gap-3 w-full py-4.5 bg-indigo-600 text-white rounded-2xl font-black text-base transition-all hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-200 active:scale-[0.98] group">
 
@@ -52,17 +52,18 @@ import { APP_VERSION } from '../utils/constants';
 
 <script>
     import { storage } from '../utils/storage';
-    import { initAppUpdater } from '../utils/appUpdater';
-    
-    // Check for APK updates
-    initAppUpdater();
-
     // Auto-login Check
     (async () => {
         const token = await storage.get('access_token');
         if (token) {
             console.log('Sesi ditemukan, mengalihkan ke Dashboard...');
             window.location.href = 'absensi.html';
+            return;
+        }
+
+        const isAdmin = await storage.get('is_admin');
+        if (isAdmin === 'true') {
+            window.location.href = 'admin.html';
         }
     })();
 </script>

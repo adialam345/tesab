@@ -31,7 +31,7 @@ import UserHeader from '../components/UserHeader.astro';
 <script>
     import { initCamera, loadFaceModels } from '../utils/camera';
     import { getRandomOffset, fetchLocation } from '../utils/location';
-    import { TARGET_BASE_URL } from '../utils/constants';
+    import { TARGET_BASE_URL, LAPANGAN_BUPATI_LOCATION } from '../utils/constants';
     import { secureFetch } from '../utils/apiClient';
     import { updateButtonStates, handleAttendanceSubmission } from '../utils/attendanceLogic';
     import { processPhoto, runCaptureSequence } from '../utils/photoProcessor';
@@ -39,10 +39,10 @@ import UserHeader from '../components/UserHeader.astro';
     import { storage } from '../utils/storage';
     // OTA DISABLED - Build APK baru untuk setiap update
 
-    const USER_AGENT = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36';
-
     const state = {
+        officeLocation: null as any,
         targetLocation: null as any,
+        selectedLocationType: 'office' as 'office' | 'bupati',
         simulatedLocation: null as { lat: number, lng: number } | null,
         capturedPhoto: null as string | null,
         faceEmbedding: null as number[] | null,
@@ -53,7 +53,8 @@ import UserHeader from '../components/UserHeader.astro';
         hasBreakIn: false,
         isBreakIn: false,
         isBreakOut: false,
-        token: null as string | null
+        token: null as string | null,
+        deviceId: ''
     };
 
     const ui = {
@@ -65,6 +66,7 @@ import UserHeader from '../components/UserHeader.astro';
         retakeBtn: document.getElementById('retakeBtn'),
         fileInput: document.getElementById('fileInput') as HTMLInputElement,
         checkInBtn: document.getElementById('checkInBtn') as HTMLButtonElement,
+        checkInBtnText: document.getElementById('checkInBtnText'),
         checkInStatus: document.getElementById('checkInStatus'),
         livenessUI: document.getElementById('livenessUI'),
         livenessInstruction: document.getElementById('livenessInstruction'),
@@ -72,7 +74,9 @@ import UserHeader from '../components/UserHeader.astro';
         faceMatch: document.getElementById('faceMatch'),
         faceMatchProgress: document.getElementById('faceMatchProgress'),
         breakInBtn: document.getElementById('breakInBtn') as HTMLButtonElement,
-        breakOutBtn: document.getElementById('breakOutBtn') as HTMLButtonElement
+        breakInBtnText: document.getElementById('breakInBtnText'),
+        breakOutBtn: document.getElementById('breakOutBtn') as HTMLButtonElement,
+        breakOutBtnText: document.getElementById('breakOutBtnText')
     };
 
     // if (!state.token) window.location.href = '/login'; // Moved inside async init
@@ -128,9 +132,9 @@ import UserHeader from '../components/UserHeader.astro';
         document.getElementById('jsonDebugContainer')?.classList.add('hidden');
     });
 
-    ui.checkInBtn?.addEventListener('click', () => handleAttendanceSubmission(state.hasCheckedIn ? 'check-out' : 'check-in', ui, state, USER_AGENT));
-    ui.breakInBtn?.addEventListener('click', () => handleAttendanceSubmission('break-in', ui, state, USER_AGENT));
-    ui.breakOutBtn?.addEventListener('click', () => handleAttendanceSubmission('break-out', ui, state, USER_AGENT));
+    ui.checkInBtn?.addEventListener('click', () => handleAttendanceSubmission(state.hasCheckedIn ? 'check-out' : 'check-in', ui, state, state.deviceId));
+    ui.breakInBtn?.addEventListener('click', () => handleAttendanceSubmission('break-in', ui, state, state.deviceId));
+    ui.breakOutBtn?.addEventListener('click', () => handleAttendanceSubmission('break-out', ui, state, state.deviceId));
 
     document.getElementById('copyRequestBtn')?.addEventListener('click', () => {
         const jsonPre = document.getElementById('jsonRequest');
@@ -174,7 +178,11 @@ import UserHeader from '../components/UserHeader.astro';
             return;
         }
 
-        // 1. Setup User Profile
+        // 1. Setup User Profile & Device ID
+        const fixedDeviceId = await storage.get('fixed_device_id');
+        state.deviceId = fixedDeviceId || "";
+        console.log('Using Device ID:', state.deviceId || "EMPTY");
+
         const userNameEl = document.getElementById('userName');
         if (userNameEl) {
             const fullName = await storage.get('full_name');
@@ -186,9 +194,17 @@ import UserHeader from '../components/UserHeader.astro';
             const userPhoto = document.getElementById('userPhoto') as HTMLImageElement;
             const userPhotoPlaceholder = document.getElementById('userPhotoPlaceholder');
             if (userPhoto && userPhotoPlaceholder) {
-                userPhoto.src = `${TARGET_BASE_URL}${photoPath}`;
+                // Jika path sudah ada http, jangan tambah base url
+                const finalUrl = photoPath.startsWith('http') ? photoPath : `${TARGET_BASE_URL}${photoPath}`;
+                userPhoto.src = finalUrl;
                 userPhoto.classList.remove('hidden');
                 userPhotoPlaceholder.classList.add('hidden');
+                
+                // Fallback jika gambar error/mati
+                userPhoto.onerror = () => {
+                   userPhoto.classList.add('hidden');
+                   userPhotoPlaceholder.classList.remove('hidden');
+                };
             }
         }
 
@@ -252,33 +268,113 @@ import UserHeader from '../components/UserHeader.astro';
         loadFaceModels();
         updateFaceDetection(ui, state);
 
-        // 4. Fetch Location
-        const loc = await fetchLocation(state.token || '');
-        if (loc) {
-            state.targetLocation = loc;
-            const offset = getRandomOffset(10, loc.latitude);
-            state.simulatedLocation = { lat: loc.latitude + offset.deltaLat, lng: loc.longitude + offset.deltaLng };
-            const estimatedDistance = Math.sqrt(Math.pow(offset.deltaLat * 111320, 2) + Math.pow(offset.deltaLng * 111320 * Math.cos(loc.latitude * Math.PI / 180), 2)).toFixed(1);
+        // Helper to apply target location & update UI
+        function setAttendanceTarget(targetLoc: any, type: 'office' | 'bupati') {
+            state.targetLocation = targetLoc;
+            state.selectedLocationType = type;
+            const offset = getRandomOffset(Math.min(10, targetLoc.radius_meters || 10), targetLoc.latitude);
+            state.simulatedLocation = { lat: targetLoc.latitude + offset.deltaLat, lng: targetLoc.longitude + offset.deltaLng };
+            const estimatedDistance = Math.sqrt(Math.pow(offset.deltaLat * 111320, 2) + Math.pow(offset.deltaLng * 111320 * Math.cos(targetLoc.latitude * Math.PI / 180), 2)).toFixed(1);
 
             const targetNameEl = document.getElementById('targetName');
             const targetAddressEl = document.getElementById('targetAddress');
             const coordsEl = document.getElementById('coords');
+            const coordsLabelEl = document.getElementById('coordsLabel');
             const userCoordsEl = document.getElementById('userCoords');
             const userDistanceEl = document.getElementById('userDistance');
             const radiusEl = document.getElementById('radius');
             const statusBadge = document.getElementById('statusBadge');
-            
-            if (targetNameEl) targetNameEl.textContent = loc.name;
-            if (targetAddressEl) targetAddressEl.textContent = loc.address;
-            if (coordsEl) coordsEl.textContent = `${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}`;
+            const activeLocTag = document.getElementById('activeLocTag');
+
+            if (targetNameEl) targetNameEl.textContent = targetLoc.name;
+            if (targetAddressEl) targetAddressEl.textContent = targetLoc.address;
+            if (coordsEl) coordsEl.textContent = `${targetLoc.latitude.toFixed(6)}, ${targetLoc.longitude.toFixed(6)}`;
+            if (coordsLabelEl) coordsLabelEl.textContent = type === 'bupati' ? 'Koordinat Lap. Bupati' : 'Koordinat Target';
             if (userCoordsEl) userCoordsEl.textContent = `${state.simulatedLocation.lat.toFixed(6)}, ${state.simulatedLocation.lng.toFixed(6)}`;
             if (userDistanceEl) userDistanceEl.textContent = `± ${estimatedDistance} meter`;
-            if (radiusEl) radiusEl.textContent = `${loc.radius_meters}m`;
+            if (radiusEl) radiusEl.textContent = `${targetLoc.radius_meters}m`;
             if (statusBadge) {
                 statusBadge.textContent = 'Sesuai';
-                statusBadge.classList.add('success');
+                statusBadge.className = 'px-4 py-2 rounded-full text-[10px] font-extrabold shrink-0 tracking-wider uppercase transition-colors status-badge success';
             }
+
+            if (activeLocTag) {
+                activeLocTag.classList.remove('hidden');
+                if (type === 'bupati') {
+                    activeLocTag.textContent = 'Lap. Bupati';
+                    activeLocTag.className = 'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800';
+                } else {
+                    activeLocTag.textContent = 'Kantor';
+                    activeLocTag.className = 'px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700';
+                }
+            }
+
+            // Update button styles in Monday selector if present
+            const officeBtn = document.getElementById('locOptionOffice');
+            const bupatiBtn = document.getElementById('locOptionBupati');
+            const officeCheck = document.getElementById('officeCheckIcon');
+            const bupatiCheck = document.getElementById('bupatiCheckIcon');
+
+            if (officeBtn && bupatiBtn) {
+                if (type === 'office') {
+                    officeBtn.className = 'location-choice-btn relative flex items-center gap-3 p-3.5 rounded-2xl border-2 border-indigo-600 bg-indigo-50/50 text-left transition-all cursor-pointer shadow-sm';
+                    bupatiBtn.className = 'location-choice-btn relative flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 bg-white text-left transition-all cursor-pointer hover:border-slate-300';
+                    officeCheck?.classList.remove('hidden');
+                    bupatiCheck?.classList.add('hidden');
+                } else {
+                    bupatiBtn.className = 'location-choice-btn relative flex items-center gap-3 p-3.5 rounded-2xl border-2 border-indigo-600 bg-indigo-50/50 text-left transition-all cursor-pointer shadow-sm';
+                    officeBtn.className = 'location-choice-btn relative flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 bg-white text-left transition-all cursor-pointer hover:border-slate-300';
+                    bupatiCheck?.classList.remove('hidden');
+                    officeCheck?.classList.add('hidden');
+                }
+            }
+
+            try {
+                localStorage.setItem('selected_attendance_loc_type', type);
+            } catch (e) {}
+
             updateButtonStates(ui, state);
+        }
+
+        // 4. Fetch Location
+        const loc = await fetchLocation(state.token || '');
+        if (loc) {
+            state.officeLocation = loc;
+
+            // Check if today is Monday (getDay() === 1) or forced by URL/localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const isMonday = new Date().getDay() === 1 || urlParams.get('senin') === 'true' || localStorage.getItem('force_senin') === 'true';
+
+            const mondaySection = document.getElementById('mondayLocationSection');
+            const locOfficeName = document.getElementById('locOfficeName');
+            const locOfficeAddress = document.getElementById('locOfficeAddress');
+            const officeBtn = document.getElementById('locOptionOffice');
+            const bupatiBtn = document.getElementById('locOptionBupati');
+
+            if (locOfficeName) locOfficeName.textContent = loc.name || 'Kantor OPD';
+            if (locOfficeAddress) locOfficeAddress.textContent = loc.address ? `${loc.address} (${loc.radius_meters}m)` : `Radius ${loc.radius_meters}m`;
+
+            if (isMonday) {
+                if (mondaySection) mondaySection.classList.remove('hidden');
+
+                officeBtn?.addEventListener('click', () => {
+                    setAttendanceTarget(state.officeLocation, 'office');
+                });
+
+                bupatiBtn?.addEventListener('click', () => {
+                    setAttendanceTarget(LAPANGAN_BUPATI_LOCATION, 'bupati');
+                });
+
+                // Check stored preference or default to office
+                const savedType = localStorage.getItem('selected_attendance_loc_type');
+                if (savedType === 'bupati') {
+                    setAttendanceTarget(LAPANGAN_BUPATI_LOCATION, 'bupati');
+                } else {
+                    setAttendanceTarget(loc, 'office');
+                }
+            } else {
+                setAttendanceTarget(loc, 'office');
+            }
         }
     })();
 </script>

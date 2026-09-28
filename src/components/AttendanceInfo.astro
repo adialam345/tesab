@@ -11,7 +11,7 @@ import AttendanceDebug from './AttendanceDebug.astro';
 
     <div class="space-y-5">
         <div class="flex justify-between items-center pb-4 border-bottom border-slate-50">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Koordinat Kantor</span>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="coordsLabel">Koordinat Target</span>
             <span class="text-sm font-black text-slate-800" id="coords">...</span>
         </div>
         <div class="flex justify-between items-center pb-4 border-bottom border-slate-50">
@@ -91,17 +91,19 @@ import AttendanceDebug from './AttendanceDebug.astro';
     </div>
 
     <div class="mt-4 grid grid-cols-2 gap-3">
-        <button id="breakOutBtn" class="flex items-center justify-center gap-2 py-3 bg-cyan-600 text-white rounded-2xl font-black text-xs shadow-lg shadow-cyan-100 transition-all hover:bg-cyan-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none" disabled>
-            Istirahat (Out)
+        <button id="breakOutBtn" class="flex items-center justify-center gap-2 py-3 bg-cyan-600 text-white rounded-2xl font-black text-[11px] shadow-lg shadow-cyan-100 transition-all hover:bg-cyan-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2 16 5-5 5 5"></path><path d="M7 11V3"></path><path d="M20 21h2"></path><path d="M14 21h2"></path><path d="M18 14v7"></path><path d="m14 17 4-3 4 3"></path></svg>
+            <span id="breakOutBtnText">Istirahat (Out)</span>
         </button>
-        <button id="breakInBtn" class="flex items-center justify-center gap-2 py-3 bg-amber-500 text-white rounded-2xl font-black text-xs shadow-lg shadow-amber-100 transition-all hover:bg-amber-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none" disabled>
-            Istirahat (In)
+        <button id="breakInBtn" class="flex items-center justify-center gap-2 py-3 bg-amber-500 text-white rounded-2xl font-black text-[11px] shadow-lg shadow-amber-100 transition-all hover:bg-amber-600 active:scale-95 disabled:opacity-50 disabled:pointer-events-none" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m2 16 5 5 5-5"></path><path d="M7 21v-8"></path><path d="M20 21h2"></path><path d="M14 21h2"></path><path d="M18 14v7"></path><path d="m14 17 4-3 4 3"></path></svg>
+            <span id="breakInBtnText">Istirahat (In)</span>
         </button>
     </div>
 
     <div class="mt-4">
         <button id="checkInBtn" class="w-full flex items-center justify-center gap-3 py-4 bg-indigo-600 text-white rounded-2xl font-black text-base shadow-xl shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:shadow-none" disabled>
-            Kirim Absensi
+            <span id="checkInBtnText">Kirim Absensi</span>
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
         </button>
     </div>

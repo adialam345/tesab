@@ -1,0 +1,8 @@
+﻿# COPY INI KE CONFIG NGINX VPS (aaPanel -> Website -> Config)
+location /ota/ {
+    types {
+        application/vnd.android.package-archive apk;
+    }
+    add_header Content-Disposition "attachment; filename=app-release.apk";
+    add_header Access-Control-Allow-Origin "*";
+}

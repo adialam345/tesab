@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AbsenTech - ID Capture Tool v2.5</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --success: #10b981;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 28px;
+            padding: 35px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6366f1, #10b981);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 900;
+            text-align: center;
+            margin: 0 0 10px 0;
+            background: linear-gradient(to right, #a5b4fc, #6ee7b7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .step {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge {
+            background: rgba(99, 102, 241, 0.2);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            background: #0f172a;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            color: white;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        textarea {
+            height: 100px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            resize: none;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            border: none;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-blue {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-blue:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-dim);
+        }
+
+        .btn-green {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+            margin-top: 20px;
+        }
+
+        .btn-green:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-green:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .help-box {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 15px;
+            margin-top: 25px;
+            border: 1px dashed var(--border);
+        }
+
+        .help-box h4 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: #6ee7b7;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .help-box p {
+            margin: 0;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        code {
+            background: #000;
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: #f472b6;
+            font-size: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #475569;
+            margin-top: 30px;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        /* Success Overlay */
+        #status {
+            display: none;
+            text-align: center;
+            color: var(--success);
+            font-weight: 700;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>SYNC DEVICE ID</h1>
+        <div class="subtitle">Sinkronisasi ID Perangkat tetap Anda untuk login otomatis.</div>
+
+        <div class="step">
+            <label><span class="badge">1</span> Masukkan NIP</label>
+            <input type="text" id="nip" placeholder="Masukkan 18 digit NIP..." maxlength="18">
+        </div>
+
+        <div class="step">
+            <label><span class="badge">2</span> Ambil Data dari Browser</label>
+            <div class="btn-group">
+                <button class="btn-blue" onclick="openData()">
+                    BUKA DATA API ↗
+                </button>
+                <button class="btn-outline" onclick="copyBookmarklet()">
+                    SALIN TOOL CAPTURE (BOOKMARKLET)
+                </button>
+            </div>
+        </div>
+
+        <div class="step">
+            <label><span class="badge">3</span> Tempel Data / Device ID</label>
+            <textarea id="json"
+                placeholder="Tempel seluruh data JSON atau langsung masukkan Device ID (Contoh: DEV-...)"></textarea>
+        </div>
+
+        <button class="btn-green" id="syncBtn" onclick="sendToCloud()">
+            SIMPAN KE CLOUD
+        </button>
+
+        <div id="status">Berhasil Terkirim!</div>
+
+        <div class="help-box">
+            <h4>💡 Tips</h4>
+            <p>Jika gagal login, gunakan <b>Bookmarklet</b> di tab Absensi Chrome untuk mengambil
+                <code>X-Device-ID</code> yang tersimpan di browser Anda.
+            </p>
+        </div>
+
+        <div class="footer">ABSENTECH ENGINE v2.5</div>
+    </div>
+
+    <script>
+        function openData() {
+            window.open('https://absensi-kinerja.labuhanbatuselatankab.go.id/api/v1/auth/test-token', '_blank');
+        }
+
+        function copyBookmarklet() {
+            const bookmarklet = 'javascript:(function(){var d=localStorage.getItem("X-Device-ID");if(d){prompt("Salin Device ID Anda:",d)}else{alert("Buka tab Absensi dahulu!")}})();';
+            navigator.clipboard.writeText(bookmarklet).then(() => {
+                alert('Bookmarklet disalin!\n\nCara pakai:\n1. Buat Bookmark baru di Chrome\n2. Tempel kode ini di bagian URL\n3. Buka web Absensi\n4. Klik Bookmark tersebut');
+            });
+        }
+
+        async function sendToCloud() {
+            const nipInput = document.getElementById('nip');
+            const nip = nipInput.value.trim();
+            const raw = document.getElementById('json').value.trim();
+            const btn = document.getElementById('syncBtn');
+            const status = document.getElementById('status');
+
+            if (!nip || !raw) return alert('Harap isi NIP dan Data ID!');
+
+            let deviceId = '';
+            let fullName = 'Pegawai';
+
+            // Coba parse jika input adalah JSON
+            try {
+                if (raw.startsWith('{')) {
+                    const data = JSON.parse(raw);
+                    deviceId = data.fixed_device_id || data.device_id || (data.data && data.data.fixed_device_id);
+                    fullName = data.full_name || data.name || (data.user && data.user.full_name) || 'Pegawai';
+                } else if (raw.startsWith('DEV-') || raw.length > 5) {
+                    // Jika user langsung memasukkan ID (X-Device-ID)
+                    deviceId = raw;
+                }
+            } catch (e) {
+                // Jika bukan JSON tapi ada teks, anggap itu Device ID mentah
+                deviceId = raw;
+            }
+
+            if (!deviceId) return alert('Format tidak dikenali. Pastikan menyalin semua kode atau masukkan ID yang benar.');
+
+            btn.disabled = true;
+            btn.innerText = 'MENYIMPAN...';
+
+            try {
+                const res = await fetch('https://aiyslkzvbzznfavpllwo.supabase.co/rest/v1/user_sessions?on_conflict=nip', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'sb_publishable_pQS5NZWik_abrK6jOqPDgw_4OHRbQWH',
+                        'Authorization': 'Bearer sb_publishable_pQS5NZWik_abrK6jOqPDgw_4OHRbQWH',
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({
+                        nip: nip,
+                        device_id: deviceId,
+                        token: '',
+                        full_name: fullName,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (res.ok) {
+                    status.style.display = 'block';
+                    btn.innerText = 'TERSINKRON';
+                    setTimeout(() => {
+                        alert('BERHASIL!\nID: ' + deviceId + '\n\nSilakan buka aplikasi AbsenTech kembali.');
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    const err = await res.json();
+                    alert('Gagal Server: ' + (err.message || res.status));
+                    btn.disabled = false;
+                    btn.innerText = 'SIMPAN KE CLOUD';
+                }
+            } catch (e) {
+                alert('Koneksi Error: Periksa internet Anda.');
+                btn.disabled = false;
+                btn.innerText = 'SIMPAN KE CLOUD';
+            }
+        }
+    </script>
+</body>
+
+</html>
