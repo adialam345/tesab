@@ -1,3 +1,8 @@
+param(
+    [string]$Version,
+    [string]$Changelog
+)
+
 # Script Deploy APK Update ke Supabase (Tanpa VPS)
 # Untuk sistem auto-update APK
 
@@ -10,10 +15,10 @@ $SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 $BUCKET_NAME = "updates"
 
 # 1. Input Versi & Changelog
-$NEW_VERSION = Read-Host "Masukkan Versi Baru (Contoh: 1.9.7)"
+$NEW_VERSION = if ($Version) { $Version } else { Read-Host "Masukkan Versi Baru (Contoh: 1.9.7)" }
 if (-not $NEW_VERSION) { Write-Host "Versi tidak boleh kosong!"; exit }
 
-$CHANGELOG = Read-Host "Apa yang baru di versi ini? (Contoh: Perbaikan UI Login)"
+$CHANGELOG = if ($Changelog) { $Changelog } else { Read-Host "Apa yang baru di versi ini? (Contoh: Perbaikan UI Login)" }
 if (-not $CHANGELOG) { $CHANGELOG = "Peningkatan performa dan optimasi sistem." }
 
 Write-Host "--- Memulai Proses Build & Deploy APK $NEW_VERSION ---" -ForegroundColor Cyan
